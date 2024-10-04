@@ -21,9 +21,11 @@ PIP_PACKAGES=(
 NODES=(
     "https://github.com/ltdrdata/ComfyUI-Manager"
     "https://github.com/cubiq/ComfyUI_essentials"
+    "https://github.com/city96/ComfyUI-GGUF"
 )
 
 CHECKPOINT_MODELS=(
+    "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors"
 )
 
 CLIP_MODELS=(
@@ -35,6 +37,7 @@ CLIP_MODELS=(
 
 UNET_MODELS=(
     "https://huggingface.co/city96/FLUX.1-dev-gguf/resolve/main/flux1-dev-Q8_0.gguf"
+    "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors"
 )
 
 VAE_MODELS=(
