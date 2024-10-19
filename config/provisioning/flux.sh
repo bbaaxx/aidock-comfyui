@@ -14,18 +14,35 @@ APT_PACKAGES=(
 )
 
 PIP_PACKAGES=(
-    #"package-1"
-    #"package-2"
+    "bitsandbytes"
+    "accelerate>=0.26"
 )
 
 NODES=(
     "https://github.com/ltdrdata/ComfyUI-Manager"
     "https://github.com/cubiq/ComfyUI_essentials"
     "https://github.com/city96/ComfyUI-GGUF"
+    "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git"
+    "https://github.com/ltdrdata/ComfyUI-Inspire-Pack.git"
+    "https://github.com/Fannovel16/comfyui_controlnet_aux.git"
+    "https://github.com/jags111/efficiency-nodes-comfyui.git"
+    "https://github.com/ssitu/ComfyUI_UltimateSDUpscale.git"
+    "https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes.git"
+    "https://github.com/cubiq/ComfyUI_IPAdapter_plus.git"
+    "https://github.com/melMass/comfy_mtb.git"
+    "https://github.com/Gourieff/comfyui-reactor-node.git"
+    "https://github.com/JPS-GER/ComfyUI_JPS-Nodes.git"
+    "https://github.com/rgthree/rgthree-comfy.git"
+    "https://github.com/cubiq/ComfyUI_essentials.git"
+    "https://github.com/chrisgoringe/cg-use-everywhere.git"
+    "https://github.com/kijai/ComfyUI-KJNodes.git"
+    "https://github.com/audioscavenger/save-image-extended-comfyui.git"
+    "https://github.com/yolain/ComfyUI-Easy-Use.git"
 )
 
 CHECKPOINT_MODELS=(
     "https://civitai.com/api/download/models/570138?type=Model&format=SafeTensor&size=pruned&fp=fp16"
+    "https://civitai.com/api/download/models/920957?type=Model&format=SafeTensor&size=full&fp=fp16"
 )
 
 CLIP_MODELS=(
@@ -42,7 +59,8 @@ VAE_MODELS=(
 )
 
 LORA_MODELS=(
-    "https://civitai.com/api/download/models/16576"
+    "https://civitai.com/api/download/models/436121?type=Model&format=SafeTensor"
+    "https://civitai.com/api/download/models/899515?type=Model&format=SafeTensor"
 )
 
 ESRGAN_MODELS=(     
