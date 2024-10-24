@@ -16,7 +16,8 @@ jobs:
       fail-fast: false
       matrix:
         build:
-          - {latest: "true", comfyui: "v0.2.2", python: "3.10", pytorch: "2.4.1"}
+          - {latest: "true", comfyui: "v0.2.4", python: "3.12", pytorch: "2.4.1"}
+          - {latest: "true", comfyui: "v0.2.4", python: "3.10", pytorch: "2.4.1"}
     steps:
       -
         name: Free Space
@@ -47,7 +48,7 @@ jobs:
         name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ vars.DOCKERHUB_USER }}
+          username: ${{secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
         name: Login to GitHub Container Registry
@@ -129,7 +130,7 @@ jobs:
         name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ vars.DOCKERHUB_USER }}
+          username: ${{secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
         name: Login to GitHub Container Registry
@@ -142,7 +143,7 @@ jobs:
         name: Set tags
         run: |
           img_path_ghcr="ghcr.io/${{ env.REPO_NAMESPACE }}/${{ env.REPO_NAME }}"
-          img_path_dhub="${{ vars.DOCKERHUB_USER }}/${{ env.REPO_NAME }}-cuda"
+          img_path_dhub="${{secrets.DOCKERHUB_USERNAME }}/${{ env.REPO_NAME }}-cuda"
           if [[ -z '${{ matrix.build.comfyui }}' ]]; then
               COMFYUI_BUILD_REF="$(curl -s https://api.github.com/repos/comfyanonymous/ComfyUI/tags | jq -r '.[0].name')"
           else
@@ -214,7 +215,7 @@ jobs:
         name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ vars.DOCKERHUB_USER }}
+          username: ${{secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
         name: Login to GitHub Container Registry
@@ -227,7 +228,7 @@ jobs:
         name: Set tags
         run: |
             img_path_ghcr="ghcr.io/${{ env.REPO_NAMESPACE }}/${{ env.REPO_NAME }}"
-            img_path_dhub="${{ vars.DOCKERHUB_USER }}/${{ env.REPO_NAME }}-rocm"
+            img_path_dhub="${{secrets.DOCKERHUB_USERNAME }}/${{ env.REPO_NAME }}-rocm"
             if [[ -z '${{ matrix.build.comfyui }}' ]]; then
                 COMFYUI_BUILD_REF="$(curl -s https://api.github.com/repos/comfyanonymous/ComfyUI/tags | jq -r '.[0].name')"
             else
