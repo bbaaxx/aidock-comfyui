@@ -12,6 +12,10 @@ APT_PACKAGES=(
 )
 
 PIP_PACKAGES=(
+    "simpleeval"
+    "bitsandbytes"
+    "accelerate"
+    "basicsr"
 )
 
 NODES=(
@@ -21,9 +25,20 @@ NODES=(
     "https://github.com/audioscavenger/save-image-extended-comfyui"
     "https://github.com/yolain/ComfyUI-Easy-Use"
     "https://github.com/crystian/ComfyUI-Crystools.git"
+    "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git"
+    "https://github.com/ltdrdata/ComfyUI-Inspire-Pack.git"
+    "https://github.com/jags111/efficiency-nodes-comfyui.git"
+    "https://github.com/WASasquatch/was-node-suite-comfyui.git"
+    "https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes.git"
+    "https://github.com/city96/ComfyUI-GGUF.git"
+    "https://github.com/Gourieff/comfyui-reactor-node.git"
+    "https://github.com/rgthree/rgthree-comfy.git"
+    "https://github.com/audioscavenger/save-image-extended-comfyui.git"
 )
 
 CHECKPOINT_MODELS=(
+    "https://huggingface.co/luisrguerra/rdxl-beta/resolve/main/pony-12-real-dream.safetensors"
+    "https://huggingface.co/luisrguerra/real-dream-sdxl/resolve/main/pony-lightning-2.1-real-dream.safetensors"
 )
 
 CLIP_MODELS=(
