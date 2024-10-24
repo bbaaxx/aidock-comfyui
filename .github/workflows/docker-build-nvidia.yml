@@ -1,0 +1,96 @@
+name: Docker Build (Nvidia)
+
+on:
+  workflow_dispatch:
+  #push:
+  #  branches: [ "main" ]
+    
+env:
+  UBUNTU_VERSION: 22.04
+  BUILDX_NO_DEFAULT_ATTESTATIONS: 1
+
+jobs:    
+  nvidia-base:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build:
+          - {latest: "true", comfyui: "v0.2.4", python: "3.12", pytorch: "2.4.1", cuda: "12.1.1-base-22.04-v0.2.2"}
+    steps:
+      -
+        name: Free Space
+        run: |
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+      -
+        name: Env Setter
+        run: |
+          REPO=${GITHUB_REPOSITORY,,}
+          echo "REPO_NAMESPACE=${REPO%%/*}" >> ${GITHUB_ENV}
+          echo "REPO_NAME=${REPO#*/}" >> ${GITHUB_ENV}
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: Permissions fixes
+        run: |
+          target="${HOME}/work/${{ env.REPO_NAME }}/${{ env.REPO_NAME }}/build/COPY*"
+          chmod -R ug+rwX ${target}
+      -
+        name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      -
+        name: Set tags
+        run: |
+          img_path_ghcr="ghcr.io/${{ env.REPO_NAMESPACE }}/${{ env.REPO_NAME }}"
+          img_path_dhub="${{secrets.DOCKERHUB_USERNAME }}/${{ env.REPO_NAME }}-cuda"
+          if [[ -z '${{ matrix.build.comfyui }}' ]]; then
+              COMFYUI_BUILD_REF="$(curl -s https://api.github.com/repos/comfyanonymous/ComfyUI/tags | jq -r '.[0].name')"
+          else
+              COMFYUI_BUILD_REF="${{ matrix.build.comfyui }}"
+          fi
+          [ -z "$COMFYUI_BUILD_REF" ] && { echo "Error: COMFYUI_BUILD_REF is empty. Exiting script." >&2; exit 1; }
+          echo "COMFYUI_BUILD_REF=${COMFYUI_BUILD_REF}" >> ${GITHUB_ENV}
+
+          base_tag="v2-cuda-${{ matrix.build.cuda }}-${{ env.UBUNTU_VERSION }}"
+
+          if [[ ${{ matrix.build.latest }} == "true" ]]; then
+                echo "Marking latest"
+                # GHCR.io Tags
+                TAGS="${img_path_ghcr}:${base_tag}-${COMFYUI_BUILD_REF}, ${img_path_ghcr}:${base_tag}, ${img_path_ghcr}:latest, ${img_path_ghcr}:latest-cuda"
+                # Docker.io Tags
+                TAGS="${TAGS}, ${img_path_dhub}:${COMFYUI_BUILD_REF}, ${img_path_dhub}:latest"
+            else
+                TAGS="${img_path_ghcr}:${base_tag}-${COMFYUI_BUILD_REF}, ${img_path_dhub}:${COMFYUI_BUILD_REF}"
+            fi
+          echo "TAGS=${TAGS}" >> ${GITHUB_ENV}
+      -
+        name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: build
+          build-args: |
+            IMAGE_BASE=ghcr.io/ai-dock/python:${{ matrix.build.python }}-v2-cuda-${{ matrix.build.cuda }}-${{ env.UBUNTU_VERSION }}
+            PYTHON_VERSION=${{ matrix.build.python }}
+            PYTORCH_VERSION=${{ matrix.build.pytorch }}
+            COMFYUI_BUILD_REF=${{ env.COMFYUI_BUILD_REF }}
+          push: true
+          provenance: false
+          tags: ${{ env.TAGS }}

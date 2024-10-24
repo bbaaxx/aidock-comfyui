@@ -9,8 +9,6 @@
 DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ai-dock/comfyui/main/config/workflows/flux-comfyui-example.json"
 
 APT_PACKAGES=(
-    #"package-1"
-    #"package-2"
 )
 
 PIP_PACKAGES=(
@@ -21,6 +19,12 @@ PIP_PACKAGES=(
 )
 
 NODES=(
+    "https://github.com/ltdrdata/ComfyUI-Manager"
+    "https://github.com/cubiq/ComfyUI_essentials"
+    "https://github.com/Fannovel16/comfyui_controlnet_aux"
+    "https://github.com/audioscavenger/save-image-extended-comfyui"
+    "https://github.com/yolain/ComfyUI-Easy-Use"
+    "https://github.com/crystian/ComfyUI-Crystools.git"
     "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git"
     "https://github.com/ltdrdata/ComfyUI-Inspire-Pack.git"
     "https://github.com/jags111/efficiency-nodes-comfyui.git"
@@ -29,9 +33,7 @@ NODES=(
     "https://github.com/city96/ComfyUI-GGUF.git"
     "https://github.com/Gourieff/comfyui-reactor-node.git"
     "https://github.com/rgthree/rgthree-comfy.git"
-    "https://github.com/cubiq/ComfyUI_essentials.git"
     "https://github.com/audioscavenger/save-image-extended-comfyui.git"
-    "https://github.com/yolain/ComfyUI-Easy-Use.git"
 )
 
 CHECKPOINT_MODELS=(
@@ -40,26 +42,30 @@ CHECKPOINT_MODELS=(
 )
 
 CLIP_MODELS=(
-    "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors"
-    "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors"
 )
 
 UNET_MODELS=(
+    "https://huggingface.co/city96/FLUX.1-dev-gguf/resolve/main/flux1-dev-Q8_0.gguf"
 )
 
 VAE_MODELS=(
+    "https://huggingface.co/Aitrepreneur/FLX/resolve/main/ae.safetensors"
 )
 
 LORA_MODELS=(
+    "https://civitai.com/api/download/models/436121?type=Model&format=SafeTensor"
+    "https://civitai.com/api/download/models/899515?type=Model&format=SafeTensor"
+    "https://huggingface.co/alimama-creative/FLUX.1-Turbo-Alpha/resolve/main/diffusion_pytorch_model.safetensors?download=true"
 )
 
-ESRGAN_MODELS=(
+ESRGAN_MODELS=(     
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth"
     "https://huggingface.co/FacehugmanIII/4x_foolhardy_Remacri/resolve/main/4x_foolhardy_Remacri.pth"
     "https://huggingface.co/Akumetsu971/SD_Anime_Futuristic_Armor/resolve/main/4x_NMKD-Siax_200k.pth"
 )
 
 CONTROLNET_MODELS=(
+    "https://huggingface.co/Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro/resolve/main/diffusion_pytorch_model.safetensors"
 )
 
 ### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
@@ -72,14 +78,14 @@ function provisioning_start() {
     source /opt/ai-dock/bin/venv-set.sh comfyui
 
     # Get licensed models if HF_TOKEN set & valid
-    if provisioning_has_valid_hf_token; then
-        UNET_MODELS+=("https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors")
-        VAE_MODELS+=("https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/ae.safetensors")
-    else
-        UNET_MODELS+=("https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors")
-        VAE_MODELS+=("https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/ae.safetensors")
-        sed -i 's/flux1-dev\.safetensors/flux1-schnell.safetensors/g' /opt/ComfyUI/web/scripts/defaultGraph.js
-    fi
+    # if provisioning_has_valid_hf_token; then
+    #     UNET_MODELS+=("https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors")
+    #     VAE_MODELS+=("https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/ae.safetensors")
+    # else
+    #     UNET_MODELS+=("https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors")
+    #     VAE_MODELS+=("https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/ae.safetensors")
+    #     sed -i 's/flux1-dev\.safetensors/flux1-schnell.safetensors/g' /opt/ComfyUI/web/scripts/defaultGraph.js
+    # fi
 
     provisioning_print_header
     provisioning_get_apt_packages
