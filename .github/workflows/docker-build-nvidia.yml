@@ -1,4 +1,4 @@
-name: Docker Build
+name: Docker Build (Nvidia)
 
 on:
   workflow_dispatch:
