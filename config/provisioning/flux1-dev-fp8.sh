@@ -9,13 +9,9 @@
 #DEFAULT_WORKFLOW="https://..."
 
 APT_PACKAGES=(
-    #"package-1"
-    #"package-2"
 )
 
 PIP_PACKAGES=(
-    #"package-1"
-    #"package-2"
 )
 
 NODES=(
@@ -24,18 +20,25 @@ NODES=(
 )
 
 CHECKPOINT_MODELS=(
-    https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors
 )
 
 UNET_MODELS=(
-
+    # Alternative downloads for the ones at provisioning_start
+    # "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors"
+    "https://huggingface.co/Kijai/flux-fp8/resolve/main/flux1-dev-fp8-e5m2.safetensors"
 )
 
 LORA_MODELS=(
-    #"https://civitai.com/api/download/models/16576"
+    "https://huggingface.co/alimama-creative/FLUX.1-Turbo-Alpha/resolve/main/diffusion_pytorch_model.safetensors?download=true"
 )
 
 VAE_MODELS=(
+    "https://huggingface.co/Aitrepreneur/FLX/resolve/main/ae.safetensors"
+)
+
+CLIP_MODELS=(
+    "https://huggingface.co/city96/t5-v1_1-xxl-encoder-gguf/resolve/main/t5-v1_1-xxl-encoder-Q8_0.gguf"
+    "https://huggingface.co/zer0int/CLIP-GmP-ViT-L-14/resolve/main/ViT-L-14-TEXT-detail-improved-hiT-GmP-TE-only-HF.safetensors"
 )
 
 ESRGAN_MODELS=(
@@ -52,6 +55,8 @@ function provisioning_start() {
     fi
     source /opt/ai-dock/etc/environment.sh
     source /opt/ai-dock/bin/venv-set.sh comfyui
+
+    sed -i 's/flux1-dev\.safetensors/flux1-dev-fp8-e5m2.safetensors/g' /opt/ComfyUI/web/scripts/defaultGraph.js
 
     provisioning_print_header
     provisioning_get_apt_packages
@@ -72,6 +77,9 @@ function provisioning_start() {
     provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/vae" \
         "${VAE_MODELS[@]}"
+    provisioning_get_models \
+        "${WORKSPACE}/storage/stable_diffusion/models/clip" \
+        "${CLIP_MODELS[@]}"
     provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/esrgan" \
         "${ESRGAN_MODELS[@]}"
