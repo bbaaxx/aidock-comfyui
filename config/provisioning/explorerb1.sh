@@ -35,18 +35,13 @@ NODES=(
     "https://github.com/gokayfem/ComfyUI_VLM_nodes"
     "https://github.com/liusida/ComfyUI-AutoCropFaces"
     "https://github.com/KoreTeknology/ComfyUI-Universal-Styler"
-    
-
-
-
-
-
-
 )
 
 CHECKPOINT_MODELS=(
     "https://civitai.com/api/download/models/782002?type=Model&format=SafeTensor&size=full&fp=fp16"
     "https://civitai.com/api/download/models/293240?type=Model&format=SafeTensor&size=pruned&fp=fp16"
+    "https://civitai.com/api/download/models/570138?type=Model&format=SafeTensor&size=pruned&fp=fp16"
+    "https://civitai.com/api/download/models/920957?type=Model&format=SafeTensor&size=full&fp=fp16"
 )
 
 UNET_MODELS=(
@@ -69,6 +64,10 @@ ESRGAN_MODELS=(
 
 CONTROLNET_MODELS=(
     "https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/resolve/main/diffusion_pytorch_model.safetensors?download=true"
+)
+
+LLM_MODELS=(
+    "https://huggingface.co/QuantFactory/Mistral-Nemo-Instruct-2407-GGUF/resolve/main/Mistral-Nemo-Instruct-2407.Q4_K_M.gguf"
 )
 
 ### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
@@ -102,6 +101,9 @@ function provisioning_start() {
     provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/esrgan" \
         "${ESRGAN_MODELS[@]}"
+    provisioning_get_models \
+        "${WORKSPACE}/storage/stable_diffusion/models/LLavacheckpoints" \
+        "${LLM_MODELS[@]}"
     provisioning_print_end
 }
 
