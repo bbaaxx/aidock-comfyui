@@ -22,6 +22,26 @@ NODES=(
     "https://github.com/ltdrdata/ComfyUI-Manager"
     "https://github.com/cubiq/ComfyUI_essentials"
     "https://github.com/cubiq/ComfyUI_IPAdapter_plus"
+    "https://github.com/ltdrdata/ComfyUI-Inspire-Pack"
+    "https://github.com/Fannovel16/comfyui_controlnet_aux"
+    "https://github.com/WASasquatch/was-node-suite-comfyui"
+    "https://github.com/pythongosssss/ComfyUI-Custom-Scripts"
+    "https://github.com/melMass/comfy_mtb"
+    "https://github.com/bash-j/mikey_nodes"
+    "https://github.com/Gourieff/comfyui-reactor-node"
+    "https://github.com/JPS-GER/ComfyUI_JPS-Nodes"
+    "https://github.com/chrisgoringe/cg-use-everywhere"
+    "https://github.com/audioscavenger/save-image-extended-comfyui"
+    "https://github.com/gokayfem/ComfyUI_VLM_nodes"
+    "https://github.com/liusida/ComfyUI-AutoCropFaces"
+    "https://github.com/KoreTeknology/ComfyUI-Universal-Styler"
+    
+
+
+
+
+
+
 )
 
 CHECKPOINT_MODELS=(
