@@ -9,13 +9,13 @@
 #DEFAULT_WORKFLOW="https://..."
 
 APT_PACKAGES=(
-    #"package-1"
+    #"onnxruntime"
     #"package-2"
 )
 
 PIP_PACKAGES=(
-    #"package-1"
-    #"package-2"
+    "onnxruntime"
+    "onnxruntime-gpu"
 )
 
 NODES=(
@@ -34,22 +34,24 @@ NODES=(
     "https://github.com/audioscavenger/save-image-extended-comfyui"
     "https://github.com/gokayfem/ComfyUI_VLM_nodes"
     "https://github.com/liusida/ComfyUI-AutoCropFaces"
-    "https://github.com/KoreTeknology/ComfyUI-Universal-Styler"
+    "https://github.com/ltdrdata/ComfyUI-Impact-Pack"
+    "https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes"
+    "https://github.com/rgthree/rgthree-comfy"
 )
 
 CHECKPOINT_MODELS=(
-    "https://civitai.com/api/download/models/782002?type=Model&format=SafeTensor&size=full&fp=fp16"
-    "https://civitai.com/api/download/models/293240?type=Model&format=SafeTensor&size=pruned&fp=fp16"
-    "https://civitai.com/api/download/models/570138?type=Model&format=SafeTensor&size=pruned&fp=fp16"
-    "https://civitai.com/api/download/models/920957?type=Model&format=SafeTensor&size=full&fp=fp16"
+    "https://civitai.com/api/download/models/782002"
+    "https://civitai.com/api/download/models/293240"
+    # "https://civitai.com/api/download/models/570138"
+    # "https://civitai.com/api/download/models/920957"
 )
 
 UNET_MODELS=(
 )
 
 LORA_MODELS=(
-    "https://civitai.com/api/download/models/135867?type=Model&format=SafeTensor"
-    "https://civitai.com/api/download/models/140157?type=Model&format=SafeTensor"
+    "https://civitai.com/api/download/models/135867"
+    "https://civitai.com/api/download/models/140157"
 )
 
 VAE_MODELS=(
@@ -59,11 +61,11 @@ ESRGAN_MODELS=(
     "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x4.pth"
     "https://huggingface.co/FacehugmanIII/4x_foolhardy_Remacri/resolve/main/4x_foolhardy_Remacri.pth"
     "https://huggingface.co/Akumetsu971/SD_Anime_Futuristic_Armor/resolve/main/4x_NMKD-Siax_200k.pth"
-    "https://huggingface.co/skbhadra/ClearRealityV1/resolve/main/4x-ClearRealityV1.pth?download=true"
+    "https://huggingface.co/skbhadra/ClearRealityV1/resolve/main/4x-ClearRealityV1.pth"
 )
 
 CONTROLNET_MODELS=(
-    "https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/resolve/main/diffusion_pytorch_model.safetensors?download=true"
+    "https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/resolve/main/diffusion_pytorch_model.safetensors"
 )
 
 LLM_MODELS=(
