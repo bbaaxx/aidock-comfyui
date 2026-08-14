@@ -8,10 +8,11 @@ on:
 env:
   UBUNTU_VERSION: 22.04
   BUILDX_NO_DEFAULT_ATTESTATIONS: 1
-  # ComfyUI capped at v0.26.2: v0.27+ pins comfy-kitchen>=0.2.16 which uses
-  # PEP 585 annotations (list[int]) in torch custom ops; torch only supports
-  # those from 2.7.0, and torch 2.7+ has no cu121 wheels. Uncap requires a
-  # CUDA >= 12.6 base image.
+  # ComfyUI v0.27+ pins comfy-kitchen>=0.2.16 which uses PEP 585 annotations
+  # (list[int]) in torch custom ops; torch supports those from 2.7.0.
+  # The 12.4.1-base/cu130 job builds latest ComfyUI on torch 2.13 (torchaudio
+  # and xformers have no cu130 wheels - skipped, ComfyUI does not need them).
+  # The 12.1.1 job keeps the last cu121-compatible stack as a legacy fallback.
 
 
 jobs:
@@ -103,8 +104,8 @@ jobs:
       fail-fast: false
       matrix:
         build:
-          - {latest: "true", comfyui: "v0.26.2", python: "3.10", pytorch: "2.5.1", cuda: "12.1.1-base"}
-          - {latest: "false", comfyui: "v0.26.2", python: "3.10", pytorch: "2.5.1", cuda: "12.1.1-cudnn8-devel"}
+          - {latest: "true", comfyui: "v0.33.1", python: "3.10", pytorch: "2.13.0", cuda: "12.4.1-base", torch_index: "cu130", pytorch_cuda: "13.0", torchvision: "0.28.0", torchaudio: "", xformers: ""}
+          - {latest: "false", comfyui: "v0.26.2", python: "3.10", pytorch: "2.5.1", cuda: "12.1.1-base", torch_index: "", pytorch_cuda: "", torchvision: "0.20.1", torchaudio: "2.5.1", xformers: "0.0.28.post3"}
     steps:
       -
         name: Free Space
@@ -188,6 +189,11 @@ jobs:
             IMAGE_BASE=ghcr.io/ai-dock/python:${{ matrix.build.python }}-v2-cuda-${{ matrix.build.cuda }}-${{ env.UBUNTU_VERSION }}
             PYTHON_VERSION=${{ matrix.build.python }}
             PYTORCH_VERSION=${{ matrix.build.pytorch }}
+            TORCH_INDEX=${{ matrix.build.torch_index }}
+            PYTORCH_CUDA_VERSION=${{ matrix.build.pytorch_cuda }}
+            TORCHVISION_VERSION=${{ matrix.build.torchvision }}
+            TORCHAUDIO_VERSION=${{ matrix.build.torchaudio }}
+            XFORMERS_VERSION=${{ matrix.build.xformers }}
             COMFYUI_BUILD_REF=${{ env.COMFYUI_BUILD_REF }}
           push: true
           provenance: false

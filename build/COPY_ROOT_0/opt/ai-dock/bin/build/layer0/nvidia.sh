@@ -8,28 +8,33 @@ build_nvidia_main() {
 
 build_nvidia_install_deps() {
     short_cuda_version="cu$(cut -d '.' -f 1,2 <<< "${CUDA_VERSION}" | tr -d '.')"
-    # Companions pinned: latest releases require newer torch than cu121 provides.
-    # torch 2.5.1 is the last release with cu121 wheels.
-    # PyPI extra-index required: torch 2.5.1+cu121 pins nvidia-cudnn-cu12==9.1.0.70
-    # which was yanked and removed from the pytorch index; PyPI still serves
-    # yanked files for exact pins.
+    # TORCH_INDEX overrides the wheel index (e.g. cu130) when the torch build
+    # targets a newer CUDA than the base image provides; wheels bundle their
+    # own CUDA runtime, the host driver supplies compatibility.
+    torch_index="${TORCH_INDEX:-$short_cuda_version}"
+    # Companions optional: torchaudio/xformers lag torch releases and may
+    # lack wheels for the chosen index. Empty version = package skipped.
+    pkgs=("torch==${PYTORCH_VERSION}")
+    [[ -n "${TORCHVISION_VERSION}" ]] && pkgs+=("torchvision==${TORCHVISION_VERSION}")
+    [[ -n "${TORCHAUDIO_VERSION}" ]] && pkgs+=("torchaudio==${TORCHAUDIO_VERSION}")
     "$COMFYUI_VENV_PIP" install --no-cache-dir \
-        torch==${PYTORCH_VERSION} \
-        torchvision==${TORCHVISION_VERSION:-0.20.1} \
-        torchaudio==${TORCHAUDIO_VERSION:-2.5.1} \
-        --index-url=https://download.pytorch.org/whl/$short_cuda_version \
-        --extra-index-url=https://pypi.org/simple
-    # xformers separately, cu121 index only: PyPI carries same version built
-    # against a different CUDA; must not let pip pick that one
-    "$COMFYUI_VENV_PIP" install --no-cache-dir \
-        xformers==${XFORMERS_VERSION:-0.0.28.post3} \
-        --index-url=https://download.pytorch.org/whl/$short_cuda_version
+        "${pkgs[@]}" \
+        --index-url="https://download.pytorch.org/whl/${torch_index}" \
+        --extra-index-url="https://pypi.org/simple"
+    # xformers separately: PyPI carries same versions built against a
+    # different CUDA; must not let pip pick that one
+    if [[ -n "${XFORMERS_VERSION}" ]]; then
+        "$COMFYUI_VENV_PIP" install --no-cache-dir \
+            "xformers==${XFORMERS_VERSION}" \
+            --index-url="https://download.pytorch.org/whl/${torch_index}"
+    fi
 }
 
 build_nvidia_run_tests() {
     installed_pytorch_cuda_version=$("$COMFYUI_VENV_PYTHON" -c "import torch; print(torch.version.cuda)")
-    if [[ "$CUDA_VERSION" != "$installed_pytorch_cuda"* ]]; then
-        echo "Expected PyTorch CUDA ${CUDA_VERSION} but found ${installed_pytorch_cuda}\n"
+    expected_cuda="${PYTORCH_CUDA_VERSION:-$CUDA_VERSION}"
+    if [[ "$expected_cuda" != "$installed_pytorch_cuda"* ]]; then
+        echo "Expected PyTorch CUDA ${expected_cuda} but found ${installed_pytorch_cuda}\n"
         exit 1
     fi
 }

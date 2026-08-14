@@ -23,6 +23,20 @@ ARG PYTHON_VERSION="3.10"
 ENV PYTHON_VERSION=${PYTHON_VERSION}
 ARG PYTORCH_VERSION="2.5.1"
 ENV PYTORCH_VERSION="${PYTORCH_VERSION}"
+# Wheel index override (e.g. "cu130") for torch builds newer than the base
+# image CUDA; wheels bundle their own runtime. Empty = derive from base.
+ARG TORCH_INDEX=""
+ENV TORCH_INDEX="${TORCH_INDEX}"
+# Expected torch.version.cuda for the build test. Empty = base CUDA_VERSION.
+ARG PYTORCH_CUDA_VERSION=""
+ENV PYTORCH_CUDA_VERSION="${PYTORCH_CUDA_VERSION}"
+# Companion pins (nvidia build); empty = skip package.
+ARG TORCHVISION_VERSION=""
+ENV TORCHVISION_VERSION="${TORCHVISION_VERSION}"
+ARG TORCHAUDIO_VERSION=""
+ENV TORCHAUDIO_VERSION="${TORCHAUDIO_VERSION}"
+ARG XFORMERS_VERSION=""
+ENV XFORMERS_VERSION="${XFORMERS_VERSION}"
 COPY --chown=0:1111 ./COPY_ROOT_0/ /
 ARG IMAGE_BASE
 RUN set -eo pipefail && /opt/ai-dock/bin/build/layer0/init.sh | tee /var/log/build.log
