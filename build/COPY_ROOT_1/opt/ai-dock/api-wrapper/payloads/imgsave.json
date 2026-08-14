@@ -30,7 +30,7 @@
             },
             "10": {
                 "inputs": {
-                    "image": "https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/input/example.png",
+                    "image": "https://raw.githubusercontent.com/Comfy-Org/ComfyUI/master/input/example.png",
                     "upload": "image"
                 },
                 "class_type": "LoadImage",

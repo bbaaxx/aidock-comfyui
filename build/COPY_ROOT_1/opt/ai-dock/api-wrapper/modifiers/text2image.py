@@ -68,7 +68,7 @@ Example Request Body:
         "include_text": "photograph of a victorian woman, arms outstretched with angel wings. cloudy sky, meadow grass",
         "exclude_text": "watermark, text",
         "denoise": 0.87,
-        "input_image": "https://raw.githubusercontent.com/comfyanonymous/ComfyUI/master/input/example.png"
+        "input_image": "https://raw.githubusercontent.com/Comfy-Org/ComfyUI/master/input/example.png"
     }
 }
 

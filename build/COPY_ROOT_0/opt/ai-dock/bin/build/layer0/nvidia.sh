@@ -8,11 +8,13 @@ build_nvidia_main() {
 
 build_nvidia_install_deps() {
     short_cuda_version="cu$(cut -d '.' -f 1,2 <<< "${CUDA_VERSION}" | tr -d '.')"
+    # Companions pinned: latest releases require newer torch than cu121 provides.
+    # torch 2.5.1 is the last release with cu121 wheels.
     "$COMFYUI_VENV_PIP" install --no-cache-dir \
         torch==${PYTORCH_VERSION} \
-        torchvision \
-        torchaudio \
-        xformers \
+        torchvision==${TORCHVISION_VERSION:-0.20.1} \
+        torchaudio==${TORCHAUDIO_VERSION:-2.5.1} \
+        xformers==${XFORMERS_VERSION:-0.0.28.post3} \
         --index-url=https://download.pytorch.org/whl/$short_cuda_version
 }
 

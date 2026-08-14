@@ -17,13 +17,13 @@ build_common_install_api() {
 build_common_install_comfyui() {
     # Set to latest release if not provided
     if [[ -z $COMFYUI_BUILD_REF ]]; then
-        export COMFYUI_BUILD_REF="$(curl -s https://api.github.com/repos/comfyanonymous/ComfyUI/tags | \
+        export COMFYUI_BUILD_REF="$(curl -fsSL https://api.github.com/repos/Comfy-Org/ComfyUI/tags | \
             jq -r '.[0].name')"
         env-store COMFYUI_BUILD_REF
     fi
 
     cd /opt
-    git clone https://github.com/comfyanonymous/ComfyUI
+    git clone https://github.com/Comfy-Org/ComfyUI
     cd /opt/ComfyUI
     git checkout "$COMFYUI_BUILD_REF"
 

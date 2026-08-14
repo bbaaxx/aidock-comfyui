@@ -12,7 +12,8 @@ APT_PACKAGES=(
 )
 # Packages are installed after nodes so we can fix them...
 PIP_PACKAGES=(
-    "opencv-python==4.7.0.72"
+    # >=4.10 required for numpy 2.x compat (ComfyUI v0.33+ pulls numpy 2)
+    "opencv-python==4.10.0.84"
 )
 
 NODES=(

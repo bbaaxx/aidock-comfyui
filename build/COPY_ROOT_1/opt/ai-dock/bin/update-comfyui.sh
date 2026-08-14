@@ -7,7 +7,7 @@ if [[ -n "${COMFYUI_REF}" ]]; then
     ref="${COMFYUI_REF}"
 else
     # The latest tagged release
-    ref="$(curl -s https://api.github.com/repos/comfyanonymous/ComfyUI/tags | \
+    ref="$(curl -fsSL https://api.github.com/repos/Comfy-Org/ComfyUI/tags | \
             jq -r '.[0].name')"
 fi
 

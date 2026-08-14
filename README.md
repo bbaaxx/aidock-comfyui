@@ -2,7 +2,7 @@
 
 # AI-Dock + ComfyUI Docker Image
 
-Run [ComfyUI](https://github.com/comfyanonymous/ComfyUI) in a highly-configurable, cloud-first AI-Dock container.
+Run [ComfyUI](https://github.com/Comfy-Org/ComfyUI) in a highly-configurable, cloud-first AI-Dock container.
 
 >[!NOTE]
 >These images do not bundle models or third-party configurations. You should use a [provisioning script](https://github.com/ai-dock/base-image/wiki/4.0-Running-the-Image#provisioning-script) to automatically configure your container. You can find examples, including `SD3` & `FLUX.1` setup, in `config/provisioning`.
