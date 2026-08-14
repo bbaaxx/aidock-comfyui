@@ -15,6 +15,9 @@ build_common_create_venv() {
 
     # ComfyUI venv
     "python${PYTHON_VERSION}" -m venv "$COMFYUI_VENV"
+    # Upgrade pip: bundled pip has resolvelib AssertionError bug
+    # (get_topological_weights) triggered by modern dep trees
+    "$COMFYUI_VENV_PIP" install --no-cache-dir --upgrade pip
     "$COMFYUI_VENV_PIP" install --no-cache-dir \
         ipykernel \
         ipywidgets
@@ -28,6 +31,7 @@ build_common_create_venv() {
     
     # API venv
     "python${PYTHON_VERSION}" -m venv "$API_VENV"
+    "$API_VENV_PIP" install --no-cache-dir --upgrade pip
     "$API_VENV_PIP" install --no-cache-dir \
         ipykernel \
         ipywidgets
