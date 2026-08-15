@@ -106,8 +106,8 @@ jobs:
       fail-fast: false
       matrix:
         build:
-          - {latest: "true", comfyui: "v0.33.1", python: "3.10", pytorch: "2.13.0", cuda: "12.4.1-base", torch_index: "cu130", pytorch_cuda: "13.0", torchvision: "0.28.0", torchaudio: "", xformers: ""}
-          - {latest: "false", comfyui: "v0.33.1", python: "3.10", pytorch: "2.11.0", cuda: "12.4.1-base", torch_index: "cu128", pytorch_cuda: "12.8", torchvision: "0.26.0", torchaudio: "", xformers: ""}
+          - {latest: "true", comfyui: "v0.33.1", python: "3.10", pytorch: "2.13.0", cuda: "12.4.1-base", torch_index: "cu130", pytorch_cuda: "13.0", torchvision: "0.28.0", torchaudio: "2.13.0", xformers: ""}
+          - {latest: "false", comfyui: "v0.33.1", python: "3.10", pytorch: "2.11.0", cuda: "12.4.1-base", torch_index: "cu128", pytorch_cuda: "12.8", torchvision: "0.26.0", torchaudio: "2.11.0", xformers: ""}
           - {latest: "false", comfyui: "v0.26.2", python: "3.10", pytorch: "2.5.1", cuda: "12.1.1-base", torch_index: "", pytorch_cuda: "", torchvision: "0.20.1", torchaudio: "2.5.1", xformers: "0.0.28.post3"}
     steps:
       -
