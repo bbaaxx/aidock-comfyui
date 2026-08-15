@@ -10,9 +10,11 @@ env:
   BUILDX_NO_DEFAULT_ATTESTATIONS: 1
   # ComfyUI v0.27+ pins comfy-kitchen>=0.2.16 which uses PEP 585 annotations
   # (list[int]) in torch custom ops; torch supports those from 2.7.0.
-  # The 12.4.1-base/cu130 job builds latest ComfyUI on torch 2.13 (torchaudio
-  # and xformers have no cu130 wheels - skipped, ComfyUI does not need them).
-  # The 12.1.1 job keeps the last cu121-compatible stack as a legacy fallback.
+  # Three nvidia tiers, picked by HOST DRIVER version:
+  #   cu121 (driver >=530, torch 2.5.1):  legacy, ComfyUI capped at v0.26.2
+  #   cu128 (driver >=570.86, torch 2.11): v0.33.1 - most community hosts
+  #   cu130 (driver >=580.65, torch 2.13): v0.33.1 - newest hosts (latest-cuda)
+  # torchaudio/xformers skipped on cu128/cu130: no wheels, ComfyUI needs neither.
 
 
 jobs:
@@ -105,6 +107,7 @@ jobs:
       matrix:
         build:
           - {latest: "true", comfyui: "v0.33.1", python: "3.10", pytorch: "2.13.0", cuda: "12.4.1-base", torch_index: "cu130", pytorch_cuda: "13.0", torchvision: "0.28.0", torchaudio: "", xformers: ""}
+          - {latest: "false", comfyui: "v0.33.1", python: "3.10", pytorch: "2.11.0", cuda: "12.4.1-base", torch_index: "cu128", pytorch_cuda: "12.8", torchvision: "0.26.0", torchaudio: "", xformers: ""}
           - {latest: "false", comfyui: "v0.26.2", python: "3.10", pytorch: "2.5.1", cuda: "12.1.1-base", torch_index: "", pytorch_cuda: "", torchvision: "0.20.1", torchaudio: "2.5.1", xformers: "0.0.28.post3"}
     steps:
       -
@@ -159,6 +162,10 @@ jobs:
             echo "COMFYUI_BUILD_REF=${COMFYUI_BUILD_REF}" >> ${GITHUB_ENV}
 
             base_tag="v2-cuda-${{ matrix.build.cuda }}-${{ env.UBUNTU_VERSION }}"
+            # Disambiguate wheel-index variants sharing one base image
+            if [[ -n '${{ matrix.build.torch_index }}' ]]; then
+                base_tag="${base_tag}-${{ matrix.build.torch_index }}"
+            fi
 
             # GHCR.io tags
             TAGS="${img_path_ghcr}:${base_tag}-${COMFYUI_BUILD_REF}"
