@@ -23,7 +23,9 @@ PIP_PACKAGES=(
 )
 
 APT_PACKAGES=(
-    #"package-1"
+    # multi-connection downloader: HF/CDN per-connection throttling makes
+    # single-stream wget crawl (~2MB/s vs ~300MB/s with aria2 -x16)
+    "aria2"
 )
 
 CHECKPOINT_MODELS=(
@@ -134,19 +136,28 @@ function provisioning_get_models() {
     done
 }
 
-# Auth header for known gated hosts; wget to explicit target path.
+# Auth header for known gated hosts; aria2 (multi-connection) preferred,
+# wget fallback. Downloads to explicit target path, resumable.
 function provisioning_download() {
     url="$1"; target="$2"
-    auth_token=""
+    auth_header=""
     if [[ -n $HF_TOKEN && $url =~ ^https://([a-zA-Z0-9_-]+\.)?huggingface\.co(/|$|\?) ]]; then
-        auth_token="$HF_TOKEN"
+        auth_header="Authorization: Bearer ${HF_TOKEN}"
     elif [[ -n $CIVITAI_TOKEN && $url =~ ^https://([a-zA-Z0-9_-]+\.)?civitai\.com(/|$|\?) ]]; then
-        auth_token="$CIVITAI_TOKEN"
+        auth_header="Authorization: Bearer ${CIVITAI_TOKEN}"
     fi
-    if [[ -n $auth_token ]]; then
-        wget --header="Authorization: Bearer ${auth_token}" -q --show-progress -e dotbytes=4M -O "${target}" "${url}"
+    dir="$(dirname "${target}")"; file="$(basename "${target}")"
+    if command -v aria2c >/dev/null 2>&1; then
+        aria2_args=(-c -x16 -s16 -q --file-allocation=none --summary-interval=30
+                    -d "${dir}" -o "${file}")
+        [[ -n $auth_header ]] && aria2_args+=(--header="${auth_header}")
+        aria2c "${aria2_args[@]}" "${url}"
     else
-        wget -q --show-progress -e dotbytes=4M -O "${target}" "${url}"
+        if [[ -n $auth_header ]]; then
+            wget --header="${auth_header}" -q --show-progress -e dotbytes=4M -c -O "${target}" "${url}"
+        else
+            wget -q --show-progress -e dotbytes=4M -c -O "${target}" "${url}"
+        fi
     fi
 }
 
