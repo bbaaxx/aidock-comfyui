@@ -64,13 +64,15 @@ services:
         - WORKSPACE=${WORKSPACE:-/workspace}
         - WORKSPACE_SYNC=${WORKSPACE_SYNC:-false}
         - CF_TUNNEL_TOKEN=${CF_TUNNEL_TOKEN:-}
-        - CF_QUICK_TUNNELS=${CF_QUICK_TUNNELS:-true}
+        # Quick tunnels publish public trycloudflare URLs - opt-in only
+        - CF_QUICK_TUNNELS=${CF_QUICK_TUNNELS:-false}
         - CIVITAI_TOKEN=${CIVITAI_TOKEN:-}
         - HF_TOKEN=${HF_TOKEN:-}
         - WEB_ENABLE_AUTH=${WEB_ENABLE_AUTH:-true}
         - WEB_ENABLE_HTTPS=${WEB_ENABLE_HTTPS:-false}
         - WEB_USER=${WEB_USER:-user}
-        - WEB_PASSWORD=${WEB_PASSWORD:-password}
+        # No default password: set one explicitly or auth is trivially bypassed
+        - WEB_PASSWORD=${WEB_PASSWORD:-}
         - SSH_PORT_HOST=${SSH_PORT_HOST:-2222}
         - SERVICEPORTAL_PORT_HOST=${SERVICEPORTAL_PORT_HOST:-1111}
         - SERVICEPORTAL_METRICS_PORT=${SERVICEPORTAL_METRICS_PORT:-21111}

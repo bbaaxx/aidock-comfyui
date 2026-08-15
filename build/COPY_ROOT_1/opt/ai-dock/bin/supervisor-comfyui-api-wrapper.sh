@@ -24,8 +24,7 @@ function start() {
     source "$API_VENV/bin/activate"
     uvicorn main:app \
         --host 127.0.0.1 \
-        --port $LISTEN_PORT \
-        --reload
+        --port $LISTEN_PORT
 }
 
 start 2>&1

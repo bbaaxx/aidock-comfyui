@@ -2,6 +2,7 @@ import asyncio
 import aiobotocore.session
 import aiofiles
 import aiofiles.os
+import os
 from config import config
 from pathlib import Path
 
@@ -52,7 +53,8 @@ class PostprocessWorker:
         print(f"PostprocessWorker {self.worker_id} finished.")
     
     async def move_assets(self, request_id, result):
-        custom_output_dir = f"{config.OUTPUT_DIR}{request_id}"
+        output_root = os.path.realpath(config.OUTPUT_DIR)
+        custom_output_dir = os.path.join(output_root, request_id)
         await aiofiles.os.makedirs(custom_output_dir, exist_ok=True)
 
         for key, value in result.comfyui_response['outputs'].items():
@@ -60,22 +62,35 @@ class PostprocessWorker:
                 if isinstance(inner_value, list):
                     for item in inner_value:
                         if item.get("type") == "output":
-                            original_path = f"{config.OUTPUT_DIR}{item['subfolder']}/{item['filename']}"
-                            new_path = f"{custom_output_dir}/{item['filename']}"
+                            original_path = self._contained_output_path(
+                                output_root, item.get('subfolder', ''), item['filename'])
+                            new_path = os.path.join(custom_output_dir, os.path.basename(item['filename']))
 
                             # Handle duplicated request where output file is not re-generated
                             if await aiofiles.os.path.islink(original_path):
-                                real_path = await aiofiles.os.readlink(original_path)
+                                real_path = os.path.realpath(await aiofiles.os.readlink(original_path))
+                                self._assert_contained(output_root, real_path)
                                 async with aiofiles.open(real_path, 'rb') as src_file, aiofiles.open(new_path, 'wb') as dst_file:
                                     file_stat = await aiofiles.os.stat(real_path)
                                     await aiofiles.os.sendfile(dst_file.fileno(), src_file.fileno(), 0, file_stat.st_size)
                             else:
                                 await aiofiles.os.rename(original_path, new_path)
                                 await aiofiles.os.symlink(new_path, original_path)
-                            key = f"{request_id}/{item['filename']}"
+                            key = f"{request_id}/{os.path.basename(item['filename'])}"
                             result.output.append({
                                 "local_path": new_path
                             })
+
+    @staticmethod
+    def _assert_contained(output_root, path):
+        """Refuse any path that escapes the ComfyUI output directory."""
+        if os.path.commonpath([output_root, path]) != output_root:
+            raise ValueError(f"Refusing path outside output directory: {path}")
+
+    def _contained_output_path(self, output_root, subfolder, filename):
+        candidate = os.path.realpath(os.path.join(output_root, subfolder, filename))
+        self._assert_contained(output_root, candidate)
+        return candidate
 
     async def upload_assets(self, request_id, s3_config, result):
         session = aiobotocore.session.get_session()

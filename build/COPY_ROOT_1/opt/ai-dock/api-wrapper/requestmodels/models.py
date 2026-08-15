@@ -1,7 +1,8 @@
 from typing import List, Union, Dict, Annotated
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 import os
 import json
+import re
 
 class S3Config(BaseModel):
     access_key_id: str = Field(default="")
@@ -53,6 +54,15 @@ class Input(BaseModel):
     workflow_json: Dict = Field(default={})
     s3: S3Config = Field(default=S3Config.get_defaults())
     webhook: WebHook = Field(default=WebHook.get_defaults())
+
+    @field_validator("request_id")
+    @classmethod
+    def validate_request_id(cls, v):
+        # Empty is fine (server generates a uuid); anything supplied must be
+        # a safe path component - it is interpolated into filesystem paths.
+        if v and not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", v):
+            raise ValueError("request_id must be empty or 1-64 chars of [A-Za-z0-9_-]")
+        return v
     
 class Payload(BaseModel):
     input: Input

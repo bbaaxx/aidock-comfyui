@@ -6,6 +6,8 @@ import aiofiles
 import aiohttp
 import magic
 import mimetypes
+import ipaddress
+import socket
 from urllib.parse import urlparse
 from config import config
 from pathlib import Path
@@ -58,6 +60,8 @@ class BaseModifier:
         Download from URL to ComfyUI input directory as hash.ext to avoid downloading the resource
         multiple times
         """
+        if not self.is_url_allowed(url):
+            raise Exception(f"URL not allowed (SSRF guard): {url}")
         filename_without_extension = self.get_url_hash(url)
         existing_file = await self.find_input_file(
             self.input_dir,
@@ -74,9 +78,38 @@ class BaseModifier:
     
     def is_url(self, value):
         try:
-            return bool(urlparse(value)[0])
+            return urlparse(value)[0] in ("http", "https")
         except:
             return False
+
+    def is_url_allowed(self, url):
+        """
+        SSRF guard: only http(s) to publicly routable hosts. Blocks loopback,
+        link-local (cloud metadata), private/reserved ranges, and hostnames
+        that resolve to any of them.
+        """
+        try:
+            parts = urlparse(url)
+        except Exception:
+            return False
+        if parts.scheme not in ("http", "https"):
+            return False
+        host = parts.hostname
+        if not host:
+            return False
+        try:
+            addrinfos = socket.getaddrinfo(host, None)
+        except (socket.gaierror, UnicodeError):
+            return False
+        for info in addrinfos:
+            try:
+                ip = ipaddress.ip_address(info[4][0])
+            except ValueError:
+                return False
+            if (ip.is_private or ip.is_loopback or ip.is_link_local
+                    or ip.is_multicast or ip.is_reserved or ip.is_unspecified):
+                return False
+        return True
     
     def get_url_hash(self, url):
         return hashlib.md5((f'{url}').encode()).hexdigest()

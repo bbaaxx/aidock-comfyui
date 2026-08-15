@@ -93,6 +93,6 @@ async def result(request_id: str, response: Response):
 
 @app.get('/queue-info', response_model=List[str])
 async def queue_info():
-    return list(request_queue.queue)
+    return list(preprocess_queue.queue)
 
         
