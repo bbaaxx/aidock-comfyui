@@ -1,9 +1,12 @@
-aiocache
-pydantic>=2
-aiobotocore
-aiofiles
-aiohttp
-fastapi==0.103
-pathlib
-python-magic
-uvicorn==0.23
+# Pinned 2026-08-16: fastapi 0.103 + modern pydantic break the
+# Annotated[Payload, Body] route (assertion in is_body_param).
+# These exact versions verified working together on-pod.
+aiobotocore==3.9.0
+aiocache==0.12.3
+aiofiles==25.1.0
+aiohttp==3.14.3
+fastapi==0.141.1
+pathlib==1.0.1
+pydantic==2.13.4
+python-magic==0.4.27
+uvicorn==0.52.3
