@@ -17,8 +17,9 @@ PIP_PACKAGES=(
 )
 
 NODES=(
-    "https://github.com/ltdrdata/ComfyUI-Manager"
-    "https://github.com/cubiq/ComfyUI_essentials"
+    # Pinned commits (supply-chain): url@sha. Update deliberately.
+    "https://github.com/ltdrdata/ComfyUI-Manager@4f56cf3dfa7de5d8a8614dfe202ff8d613ba2244"
+    "https://github.com/cubiq/ComfyUI_essentials@9d9f4bedfc9f0321c19faf71855e228c93bd0dc9"
 )
 
 CHECKPOINT_MODELS=(
@@ -105,7 +106,11 @@ function build_extra_start() {
 }
 
 function build_extra_get_nodes() {
-    for repo in "${NODES[@]}"; do
+    for entry in "${NODES[@]}"; do
+        # Entries may pin a commit: "url@sha"
+        repo="${entry%@*}"
+        sha=""
+        [[ $entry == *"@"* ]] && sha="${entry##*@}"
         dir="${repo##*/}"
         path="/opt/ComfyUI/custom_nodes/${dir}"
         requirements="${path}/requirements.txt"
@@ -121,6 +126,9 @@ function build_extra_get_nodes() {
         else
             printf "Downloading node: %s...\n" "${repo}"
             git clone "${repo}" "${path}" --recursive
+            if [[ -n $sha ]]; then
+                ( cd "$path" && git checkout --detach "${sha}" && git submodule update --init --recursive )
+            fi
             if [[ -e $requirements ]]; then
                 "$COMFYUI_VENV_PIP" install --no-cache-dir \
                     -r "${requirements}"

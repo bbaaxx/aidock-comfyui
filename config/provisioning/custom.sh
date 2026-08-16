@@ -9,13 +9,15 @@
 
 # ============================================================
 # CONFIG - edit this section only.
-# Model entry format: "url|filename"  (filename optional if the
-# URL path already ends with it). Files that already exist are
-# skipped, so re-provisioning with a persistent disk is cheap.
+# Model entry format: "url|filename" or "url|filename|sha256"
+# (filename/sha256 optional; sha256 verified when given).
+# Files that already exist are skipped, so re-provisioning with a
+# persistent disk is cheap.
 # ============================================================
 
 NODES=(
-    "https://github.com/ltdrdata/ComfyUI-Manager"
+    # url@sha — pinned commits only (supply chain). To update: bump the SHA.
+    "https://github.com/ltdrdata/ComfyUI-Manager@4f56cf3dfa7de5d8a8614dfe202ff8d613ba2244"
 )
 
 PIP_PACKAGES=(
@@ -93,25 +95,35 @@ function provisioning_get_pip_packages() {
     [[ -n $PIP_PACKAGES ]] && "$COMFYUI_VENV_PIP" install --no-cache-dir ${PIP_PACKAGES[@]}
 }
 
-# Clone custom nodes if missing; install their python requirements.
+# Clone custom nodes if missing (pinned "url@sha"); install requirements
+# on first provision only. Pre-existing dirs are left untouched: re-running
+# pip against volume content on every boot would let volume tampering
+# become boot-time code execution.
 function provisioning_get_nodes() {
-    for repo in "${NODES[@]}"; do
-        [[ -z $repo ]] && continue
+    for entry in "${NODES[@]}"; do
+        [[ -z $entry ]] && continue
+        repo="${entry%@*}"
+        sha=""
+        [[ $entry == *"@"* ]] && sha="${entry##*@}"
         dir="${repo##*/}"
         path="/opt/ComfyUI/custom_nodes/${dir}"
         requirements="${path}/requirements.txt"
         if [[ -d $path ]]; then
-            printf "Node already present: %s\n" "${dir}"
-        else
-            printf "Cloning node: %s...\n" "${repo}"
-            git clone "${repo}" "${path}" --recursive
+            printf "Node already present: %s (skipping)\n" "${dir}"
+            continue
+        fi
+        printf "Cloning node: %s...\n" "${repo}"
+        git clone "${repo}" "${path}" --recursive
+        if [[ -n $sha ]]; then
+            ( cd "$path" && git checkout --detach "${sha}" && git submodule update --init --recursive )
         fi
         [[ -e $requirements ]] && "$COMFYUI_VENV_PIP" install --no-cache-dir -r "${requirements}"
     done
 }
 
-# $1 target dir, remaining args: "url|filename" entries.
-# Skips any file that already exists and is non-empty.
+# $1 target dir, remaining args: "url|filename" or "url|filename|sha256"
+# entries. Skips any file that already exists and is non-empty; when a
+# sha256 is given it is verified after download (and for skipped files).
 function provisioning_get_models() {
     dir="$1"
     shift
@@ -120,19 +132,25 @@ function provisioning_get_models() {
     mkdir -p "$dir"
     for entry in "${entries[@]}"; do
         [[ -z $entry ]] && continue
-        url="${entry%%|*}"
-        if [[ $entry == *"|"* ]]; then
-            file="${entry##*|}"
-        else
+        IFS='|' read -r url file sha256 <<< "${entry}"
+        if [[ -z $file ]]; then
             file="${url%%\?*}"; file="${file##*/}"
         fi
         target="${dir}/${file}"
         if [[ -s $target ]]; then
             printf "Skipping (exists): %s\n" "${file}"
-            continue
+        else
+            printf "Downloading: %s -> %s\n" "${url}" "${target}"
+            provisioning_download "${url}" "${target}"
         fi
-        printf "Downloading: %s -> %s\n" "${url}" "${target}"
-        provisioning_download "${url}" "${target}"
+        if [[ -n $sha256 ]]; then
+            if [[ $(sha256sum "${target}" | cut -d' ' -f1) != "${sha256}" ]]; then
+                printf "ERROR: sha256 mismatch for %s - refusing to keep file\n" "${file}" >&2
+                rm -f "${target}"
+                return 1
+            fi
+            printf "sha256 OK: %s\n" "${file}"
+        fi
     done
 }
 
