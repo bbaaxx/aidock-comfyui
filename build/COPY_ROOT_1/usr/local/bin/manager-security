@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Toggle ComfyUI-Manager security level from the shell (operator-only).
+# Usage: manager-security [strong|middle|normal|weak] [--restart]
+# Installed by bbaaxx/aidock-comfyui. Deliberately NOT exposed to any web
+# UI: lowering this guard must require shell access, not just a web session.
+
+set -e
+
+level="${1:-}"
+case "${level,,}" in
+    strong|middle|normal|weak) level="${level,,}" ;;
+    *) echo "Usage: manager-security [strong|middle|normal|weak] [--restart]" >&2; exit 1 ;;
+esac
+
+changed=0
+for cfg in \
+    /opt/ComfyUI/user/__manager/config.ini \
+    /opt/ComfyUI/user/_manager/config.ini \
+    /opt/ComfyUI/user/default/ComfyUI-Manager/config.ini; do
+    if [[ -f $cfg ]]; then
+        sed -i "s/^security_level = .*/security_level = ${level}/" "${cfg}"
+        echo "security_level = ${level} -> ${cfg}"
+        changed=1
+    fi
+done
+[[ $changed -eq 0 ]] && { echo "No ComfyUI-Manager config.ini found" >&2; exit 1; }
+
+if [[ "${2:-}" == "--restart" ]]; then
+    supervisorctl restart comfyui
+    echo "comfyui restarted"
+else
+    echo "Note: restart ComfyUI to apply (supervisorctl restart comfyui, or the UI restart button)"
+fi
+
+if [[ $level != "strong" ]]; then
+    echo "WARNING: '${level}' permits unverified third-party code via the Manager API."
+    echo "Revert with: manager-security strong --restart"
+fi

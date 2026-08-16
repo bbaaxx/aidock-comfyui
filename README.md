@@ -91,6 +91,8 @@ This fork hardens the ai-dock defaults for single-tenant cloud (Runpod) use:
 - **Cloudflare quick tunnels are off** (`CF_QUICK_TUNNELS=false`); use your platform proxy URLs instead.
 - **File sync: prefer SSH transport.** Syncthing's defaults (relays, global discovery, NAT traversal) contact third-party infrastructure; when enabled here it is forced to direct connections only. The recommended default is SSH-based sync, which reuses the already-exposed, pubkey-only SSH endpoint and adds no listening services:
 
+- **ComfyUI-Manager runs at `security_level=strong`** (no remote node/pip installs) with telemetry off (`share_option=none`). To install custom nodes via the Manager UI, relax it **temporarily** either at deploy time (`COMFYUI_MANAGER_SECURITY_LEVEL=weak` env) or live over SSH (`manager-security weak --restart`), then revert with `manager-security strong --restart`. It is deliberately not changeable from any web UI - see the security section of the wiki.
+
 ```bash
 # one-shot sync (models, outputs)
 rsync -avz -e "ssh -i ~/.runpod/ssh/RunPod-Key-Go -p <pod_ssh_port>" \
