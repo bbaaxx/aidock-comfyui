@@ -82,6 +82,29 @@ You can access the api directly at `/ai-dock/api/` or you can use the Swager/ope
 >[!NOTE]
 >All services are password protected by default. See the [security](https://github.com/ai-dock/base-image/wiki#security) and [environment variables](https://github.com/ai-dock/base-image/wiki/2.0-Environment-Variables) documentation for more information.
 
+## Security & Privacy (this fork)
+
+This fork hardens the ai-dock defaults for single-tenant cloud (Runpod) use:
+
+- **Web auth is mandatory.** Set `WEB_USER`/`WEB_PASSWORD` (use Runpod secrets: `{{ RUNPOD_SECRET_name }}`); there is no default password.
+- **Jupyter and Syncthing are opt-in.** They stay stopped when the pod is deployed with `SUPERVISOR_NO_AUTOSTART=jupyter,syncthing` (recommended template setting). Start one for a session with `supervisorctl start jupyter` (or `syncthing`) over SSH, or remove it from the env list at deploy time.
+- **Cloudflare quick tunnels are off** (`CF_QUICK_TUNNELS=false`); use your platform proxy URLs instead.
+- **File sync: prefer SSH transport.** Syncthing's defaults (relays, global discovery, NAT traversal) contact third-party infrastructure; when enabled here it is forced to direct connections only. The recommended default is SSH-based sync, which reuses the already-exposed, pubkey-only SSH endpoint and adds no listening services:
+
+```bash
+# one-shot sync (models, outputs)
+rsync -avz -e "ssh -i ~/.runpod/ssh/RunPod-Key-Go -p <pod_ssh_port>" \
+  root@<pod_ip>:/opt/ComfyUI/output/ ./outputs/
+
+# continuous two-way sync (mutagen: https://mutagen.io)
+mutagen sync create --name=pod \
+  ./workspace \
+  "root@<pod_ip>:<pod_ssh_port>:/workspace" \
+  -i "~/.runpod/ssh/RunPod-Key-Go"
+```
+
+If you enable Syncthing instead: expose the transport port (`22999/tcp`) on the pod and add the device manually as `tcp://<pod_ip>:<mapped_port>` — no discovery/relays are available by design.
+
 ## Pre-Configured Templates
 
 **Vast.​ai**
