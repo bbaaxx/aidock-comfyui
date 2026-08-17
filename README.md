@@ -1,122 +1,156 @@
-[![Docker Build](https://github.com/ai-dock/comfyui/actions/workflows/docker-build.yml/badge.svg)](https://github.com/ai-dock/comfyui/actions/workflows/docker-build.yml)
+# aidock-comfyui (revived + hardened fork)
 
-# AI-Dock + ComfyUI Docker Image
+Run [ComfyUI](https://github.com/Comfy-Org/ComfyUI) as a secure, self-provisioning [Runpod](https://runpod.io) pod. Fork of the unmaintained [ai-dock/comfyui](https://github.com/ai-dock/comfyui), rebuilt on current ComfyUI and hardened for single-tenant cloud use (see [Security & Privacy](#security--privacy)).
 
-Run [ComfyUI](https://github.com/Comfy-Org/ComfyUI) in a highly-configurable, cloud-first AI-Dock container.
-
->[!NOTE]
->These images do not bundle models or third-party configurations. You should use a [provisioning script](https://github.com/ai-dock/base-image/wiki/4.0-Running-the-Image#provisioning-script) to automatically configure your container. You can find examples, including `SD3` & `FLUX.1` setup, in `config/provisioning`.
-
-
-## Documentation
-
-All AI-Dock containers share a common base which is designed to make running on cloud services such as [vast.ai](https://link.ai-dock.org/vast.ai) as straightforward and user friendly as possible.
-
-Common features and options are documented in the [base wiki](https://github.com/ai-dock/base-image/wiki) but any additional features unique to this image will be detailed below.
-
-#### Version Tags
-
-The `:latest` tag points to `:latest-cuda` and will relate to a stable and tested version.  There may be more recent builds
-
-Tags follow these patterns:
-
-##### _CUDA_
-- `:cuda-[x.x.x-base|runtime]-[ubuntu-version]`
-
-##### _ROCm_
-- `:rocm-[x.x.x-runtime]-[ubuntu-version]`
-
-##### _CPU_
-- `:cpu-[ubuntu-version]`
-
-
-Browse [ghcr.io](https://github.com/ai-dock/comfyui/pkgs/container/comfyui) for an image suitable for your target environment. Alternatively, view a select range of [CUDA](https://hub.docker.com/r/aidockorg/comfyui-cuda) and [ROCm](https://hub.docker.com/r/aidockorg/comfyui-rocm) builds at DockerHub.
-
-Supported Platforms: `NVIDIA CUDA`, `AMD ROCm`, `CPU`
-
-## Additional Environment Variables
-
-| Variable                 | Description |
-| ------------------------ | ----------- |
-| `AUTO_UPDATE`            | Update ComfyUI on startup (default `false`) |
-| `CIVITAI_TOKEN`          | Authenticate download requests from Civitai - Required for gated models |
-| `COMFYUI_ARGS`           | Startup arguments. eg. `--gpu-only --highvram` |
-| `COMFYUI_PORT_HOST`      | ComfyUI interface port (default `8188`) |
-| `COMFYUI_REF`            | Git reference for auto update. Accepts branch, tag or commit hash. Default: latest release |
-| `COMFYUI_URL`            | Override `$DIRECT_ADDRESS:port` with URL for ComfyUI |
-| `HF_TOKEN`               | Authenticate download requests from HuggingFace - Required for gated models (SD3, FLUX, etc.) |
-
-See the base environment variables [here](https://github.com/ai-dock/base-image/wiki/2.0-Environment-Variables) for more configuration options.
-
-### Additional Python Environments
-
-| Environment    | Packages |
-| -------------- | ----------------------------------------- |
-| `comfyui`      | ComfyUI and dependencies |
-| `api`          | ComfyUI API wrapper and dependencies |
-
-
-The `comfyui` environment will be activated on shell login.
-
-~~See the base micromamba environments [here](https://github.com/ai-dock/base-image/wiki/1.0-Included-Software#installed-micromamba-environments).~~
-
-## Additional Services
-
-The following services will be launched alongside the [default services](https://github.com/ai-dock/base-image/wiki/1.0-Included-Software) provided by the base image.
-
-### ComfyUI
-
-The service will launch on port `8188` unless you have specified an override with `COMFYUI_PORT_HOST`.
-
-You can set startup flags by using variable `COMFYUI_ARGS`.
-
-To manage this service you can use `supervisorctl [start|stop|restart] comfyui`.
-
-
-### ComfyUI API Wrapper
-
-This service is available on port `8188` and is a work-in-progress to replace previous serverless handlers which have been depreciated; Old Docker images and sources remain available should you need them.
-
-You can access the api directly at `/ai-dock/api/` or you can use the Swager/openAPI playground at `/ai-dock/api/docs`.
-
->[!NOTE]
->All services are password protected by default. See the [security](https://github.com/ai-dock/base-image/wiki#security) and [environment variables](https://github.com/ai-dock/base-image/wiki/2.0-Environment-Variables) documentation for more information.
-
-## Security & Privacy (this fork)
-
-This fork hardens the ai-dock defaults for single-tenant cloud (Runpod) use:
-
-- **Web auth is mandatory.** Set `WEB_USER`/`WEB_PASSWORD` (use Runpod secrets: `{{ RUNPOD_SECRET_name }}`); there is no default password.
-- **Jupyter and Syncthing are opt-in.** They stay stopped when the pod is deployed with `SUPERVISOR_NO_AUTOSTART=jupyter,syncthing` (recommended template setting). Start one for a session with `supervisorctl start jupyter` (or `syncthing`) over SSH, or remove it from the env list at deploy time.
-- **Cloudflare quick tunnels are off** (`CF_QUICK_TUNNELS=false`); use your platform proxy URLs instead.
-- **File sync: prefer SSH transport.** Syncthing's defaults (relays, global discovery, NAT traversal) contact third-party infrastructure; when enabled here it is forced to direct connections only. The recommended default is SSH-based sync, which reuses the already-exposed, pubkey-only SSH endpoint and adds no listening services:
-
-- **ComfyUI-Manager runs at `security_level=strong`** (no remote node/pip installs) with telemetry off (`share_option=none`). To install custom nodes via the Manager UI, relax it **temporarily** either at deploy time (`COMFYUI_MANAGER_SECURITY_LEVEL=weak` env) or live over SSH (`manager-security weak --restart`), then revert with `manager-security strong --restart`. It is deliberately not changeable from any web UI - see the security section of the wiki.
-
-```bash
-# one-shot sync (models, outputs)
-rsync -avz -e "ssh -i ~/.runpod/ssh/RunPod-Key-Go -p <pod_ssh_port>" \
-  root@<pod_ip>:/opt/ComfyUI/output/ ./outputs/
-
-# continuous two-way sync (mutagen: https://mutagen.io)
-mutagen sync create --name=pod \
-  ./workspace \
-  "root@<pod_ip>:<pod_ssh_port>:/workspace" \
-  -i "~/.runpod/ssh/RunPod-Key-Go"
-```
-
-If you enable Syncthing instead: expose the transport port (`22999/tcp`) on the pod and add the device manually as `tcp://<pod_ip>:<mapped_port>` — no discovery/relays are available by design.
-
-## Pre-Configured Templates
-
-**Vast.​ai**
-
-- [comfyui:latest-cuda](https://link.ai-dock.org/template-vast-comfyui)
-
-- [comfyui:latest-cuda + FLUX.1](https://link.ai-dock.org/template-vast-comfyui-flux)
-
-- [comfyui:latest-rocm](https://link.ai-dock.org/template-vast-comfyui-rocm)
+- **Images:** `ghcr.io/bbaaxx/aidock-comfyui`
+- **Services:** ComfyUI, API wrapper, service portal, Jupyter (opt-in), Syncthing (opt-in), SSH
+- **Auth:** all web services behind login; SSH pubkey-only
 
 ---
 
-_The author ([@robballantyne](https://github.com/robballantyne)) may be compensated if you sign up to services linked in this document. Testing multiple variants of GPU images in many different environments is both costly and time-consuming; This helps to offset costs_
+## Quick start (Runpod)
+
+1. **Console → Pods → Deploy** → pick a GPU host → choose template `aidock-comfyui-revived`.
+2. Wait for boot: image pull → provisioning (downloads models) → services up.
+3. Open **https://\<pod-id\>-1111.proxy.runpod.net** (portal) or **-8188** (ComfyUI) and log in.
+
+Template ships with:
+
+| Setting | Value |
+| --- | --- |
+| Image | `ghcr.io/bbaaxx/aidock-comfyui:v2-cuda-12.4.1-base-22.04-cu128-v0.33.1` |
+| Ports | `8188/http` ComfyUI, `1111/http` portal, `8888/http` Jupyter, `22/tcp` SSH |
+| Env | `PROVISIONING_SCRIPT` (custom.sh), `CF_QUICK_TUNNELS=false`, `SUPERVISOR_NO_AUTOSTART=jupyter,syncthing`, secrets via `{{ RUNPOD_SECRET_* }}` |
+
+## Image tags & host driver compatibility
+
+**Pick by the host's NVIDIA driver version** (shown in console host details; community hosts vary):
+
+| Tag | torch | ComfyUI | Min driver |
+| --- | --- | --- | --- |
+| `:v2-cuda-12.4.1-base-22.04-cu128-v0.33.1` ← template default | 2.11.0+cu128 | v0.33.1 | 570.86 (most community hosts) |
+| `:latest-cuda` / `:-cu130-v0.33.1` | 2.13.0+cu130 | v0.33.1 | 580.65 |
+| `:v2-cuda-12.1.1-base-22.04-v0.26.2` | 2.5.1+cu121 | v0.26.2 | 530 (legacy fallback) |
+| `:v2-cpu-22.04-v0.26.2` | 2.5.1+cpu | v0.26.2 | — |
+
+Wrong tier symptom: `torch.cuda.is_available() == False` / "driver too old" → redeploy on a newer-driver host or use a lower tier.
+
+## Access & credentials
+
+| What | Where | Auth |
+| --- | --- | --- |
+| Service portal | `https://<pod-id>-1111.proxy.runpod.net` | `WEB_USER` / `WEB_PASSWORD` |
+| ComfyUI | `https://<pod-id>-8188.proxy.runpod.net` | same |
+| API wrapper | `https://<pod-id>-8188.proxy.runpod.net/ai-dock/api/` (+`/docs`) | same |
+| Jupyter | `https://<pod-id>-8888.proxy.runpod.net` (when enabled) | same |
+| SSH | `ssh -i ~/.runpod/ssh/RunPod-Key-Go root@<pod_ip> -p <port>` | pubkey only |
+
+Get SSH details anytime:
+
+```bash
+runpodctl ssh info <pod-id>     # prints ready-to-use ssh command
+```
+
+Credentials come from Runpod secrets (`Console → Settings → Secrets`) referenced in template env as `{{ RUNPOD_SECRET_<name> }}` — never stored in plaintext.
+
+## Provisioning (models & nodes at boot)
+
+The template runs [`config/provisioning/custom.sh`](config/provisioning/custom.sh) at first boot. Edit the CONFIG section (or fork and point `PROVISIONING_SCRIPT` at your own URL):
+
+```bash
+NODES=(
+    # custom nodes, pinned: "url@commit-sha"
+    "https://github.com/ltdrdata/ComfyUI-Manager@4f56cf3d..."
+)
+CHECKPOINT_MODELS=(
+    # "url|filename|sha256"  (filename, sha256 optional)
+    "https://huggingface.co/.../model.safetensors|model.safetensors"
+)
+# also: UNET_MODELS (FLUX), CLIP_MODELS, VAE_MODELS, LORA_MODELS,
+#       CONTROLNET_MODELS, ESRGAN_MODELS (upscalers), EMBEDDINGS,
+#       PIP_PACKAGES, APT_PACKAGES
+```
+
+Behavior:
+
+- **Idempotent** — existing files are skipped; re-provisioning a pod with a persistent disk downloads nothing.
+- Files land in the correct ComfyUI model dirs automatically (checkpoints vs FLUX unets vs loras etc.).
+- `HF_TOKEN` / `CIVITAI_TOKEN` (from secrets) are applied automatically for gated downloads.
+- Optional `|sha256` verifies integrity; mismatch deletes the file and fails provisioning.
+- Downloads use multi-connection aria2 (~150x faster than wget on throttled hosts).
+
+Logs: `/var/log/provisioning.log` on the pod.
+
+## Custom nodes & ComfyUI-Manager security
+
+Manager ships at `security_level=strong` (remote node/pip installs blocked) with telemetry off. To install nodes via the Manager UI, relax **temporarily**:
+
+```bash
+# live, over SSH:
+manager-security weak --restart
+# ...install nodes...
+manager-security strong --restart
+```
+
+or at deploy time: env `COMFYUI_MANAGER_SECURITY_LEVEL=weak` (valid: `strong|middle|normal|weak`).
+
+Deliberately **not** changeable from any web UI: lowering defenses must require operator shell/deploy access, not just a web session.
+
+Nodes listed in `NODES` (provisioning script) are cloned at pinned commits — no floating-HEAD supply chain.
+
+## Optional services
+
+| Service | Enable |
+| --- | --- |
+| Jupyter | `supervisorctl start jupyter` over SSH, or drop `jupyter` from `SUPERVISOR_NO_AUTOSTART` at deploy |
+| Syncthing | same, via `supervisorctl start syncthing`; hardened to direct connections only (no relays/discovery) — expose `22999/tcp` and add the device manually as `tcp://<pod_ip>:<mapped_port>` |
+
+## File sync (recommended: SSH transport)
+
+Reuses the pubkey-only SSH endpoint; adds no listening services and no third-party infrastructure:
+
+```bash
+# one-shot (outputs, models)
+rsync -avz -e "ssh -i ~/.runpod/ssh/RunPod-Key-Go -p <pod_ssh_port>" \
+  root@<pod_ip>:/opt/ComfyUI/output/ ./outputs/
+
+# continuous two-way (https://mutagen.io)
+mutagen sync create --name=pod ./workspace \
+  "root@<pod_ip>:<pod_ssh_port>:/workspace" -i "~/.runpod/ssh/RunPod-Key-Go"
+```
+
+## Environment variables (fork-relevant)
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `WEB_USER` / `WEB_PASSWORD` | — (no default!) | web auth; use `{{ RUNPOD_SECRET_* }}` |
+| `WEB_ENABLE_AUTH` | `true` | never set false on a public pod |
+| `PROVISIONING_SCRIPT` | custom.sh URL | script sourced at boot |
+| `HF_TOKEN` / `CIVITAI_TOKEN` | — | gated downloads; use secrets |
+| `SUPERVISOR_NO_AUTOSTART` | `jupyter,syncthing` | comma-separated services to keep off |
+| `COMFYUI_MANAGER_SECURITY_LEVEL` | `strong` | see above; revert to strong after use |
+| `CF_QUICK_TUNNELS` | `false` | public trycloudflare URLs — keep off |
+| `COMFYUI_ARGS` | — | extra ComfyUI CLI flags (operator-trusted) |
+| `AUTO_UPDATE` | `false` | keep false (pulls unsigned code at boot) |
+
+Base-image variables (ports, SSH keys, tunnels): [ai-dock wiki](https://github.com/ai-dock/base-image/wiki/2.0-Environment-Variables).
+
+## Security & privacy
+
+This fork hardens the ai-dock defaults (full audit + threat model in the project wiki):
+
+- No default credentials anywhere; all web traffic gated by caddy auth (`Secure`, `HttpOnly` cookies)
+- SSH pubkey-only (`PasswordAuthentication no`)
+- API wrapper: SSRF guard on workflow URL fetching, path-traversal protection on outputs
+- Storage symlink daemon refuses planted-symlink escapes
+- Supervisor control panel bound to loopback (upstream exposes it unauthenticated on `0.0.0.0:9001`)
+- Supply chain: pinned node commits, pinned Python deps, optional model checksums, `AUTO_UPDATE` off
+- Privacy: no telemetry (Manager `share_option=none`), no cloud tunnels, Syncthing direct-only when enabled, prompts/tokens stay out of logs
+
+## Building
+
+GitHub Actions → **Docker Build** → Run workflow (manual dispatch). Matrix builds all tiers (cu121/cu128/cu130/cpu) and pushes to ghcr.io. A registry-side `unknown blob` push flake occasionally fails one job — **Re-run failed jobs** resolves it.
+
+---
+
+_Upstream credit: [ai-dock/comfyui](https://github.com/ai-dock/comfyui) by [@robballantyne](https://github.com/robballantyne)._
