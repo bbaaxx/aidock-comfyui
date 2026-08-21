@@ -20,7 +20,9 @@ Template ships with:
 | --- | --- |
 | Image | `ghcr.io/bbaaxx/aidock-comfyui:v2-cuda-12.4.1-base-22.04-cu128-v0.33.1` |
 | Ports | `8188/http` ComfyUI, `1111/http` portal, `8888/http` Jupyter, `22/tcp` SSH |
-| Env | `PROVISIONING_SCRIPT` (custom.sh), `CF_QUICK_TUNNELS=false`, `SUPERVISOR_NO_AUTOSTART=jupyter,syncthing`, secrets via `{{ RUNPOD_SECRET_* }}` |
+| Env | `WORKSPACE=/workspace`, `PROVISIONING_SCRIPT` (custom.sh), `CF_QUICK_TUNNELS=false`, `SUPERVISOR_NO_AUTOSTART=jupyter,syncthing`, secrets via `{{ RUNPOD_SECRET_* }}` |
+
+**Attach a volume (recommended).** With `WORKSPACE=/workspace` set and a volume mounted there, ComfyUI itself plus all models/outputs live on the volume: provisioning is skipped on restart/redeploy and container disk stays nearly empty. Size guide: ComfyUI ~2GB + your models (SDXL-class ≈7GB each) — 50GB is a comfortable start; container disk 20-30GB holds the image + torch venvs.
 
 ## Image tags & host driver compatibility
 
