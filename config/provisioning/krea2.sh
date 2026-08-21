@@ -1,11 +1,14 @@
 #!/bin/bash
 
-# Custom provisioning for bbaaxx/aidock-comfyui.
+# Krea 2 provisioning for bbaaxx/aidock-comfyui.
+# Model set per https://huggingface.co/Comfy-Org/Krea-2 (all public).
 # Sourced by /opt/ai-dock/bin/init.sh during container init.
-# Derived from config/provisioning/flux.sh (structure, token auth) and
-# get-models-sd-official.sh (explicit filenames + existence checks).
-
-# https://raw.githubusercontent.com/bbaaxx/aidock-comfyui/main/config/provisioning/custom.sh
+#
+# NOTE: Krea 2 needs a recent ComfyUI (qwen3vl text encoder) - use the
+# cu128/cu130 images (v0.33.1), NOT legacy cu121/v0.26.2. Needs ~20GB of
+# model space on the workspace volume.
+#
+# https://raw.githubusercontent.com/bbaaxx/aidock-comfyui/main/config/provisioning/krea2.sh
 
 # ============================================================
 # CONFIG - edit this section only.
@@ -31,7 +34,7 @@ APT_PACKAGES=(
 )
 
 CHECKPOINT_MODELS=(
-    "https://huggingface.co/cyberdelia/CyberRealisticPony/resolve/main/CyberRealisticPony_V18.0_F16.safetensors?download=true|CyberRealisticPony_V18.0_F16.safetensors"
+    # Krea 2 is not a checkpoint - see DIFFUSION_MODELS below
 )
 
 UNET_MODELS=(
@@ -39,7 +42,8 @@ UNET_MODELS=(
 )
 
 DIFFUSION_MODELS=(
-    # modern diffusion models (Krea, etc) -> models/diffusion_models
+    # krea2 turbo fp8 (~13.1GB) -> models/diffusion_models
+    "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_fp8_scaled.safetensors|krea2_turbo_fp8_scaled.safetensors"
 )
 
 CLIP_MODELS=(
@@ -47,15 +51,18 @@ CLIP_MODELS=(
 )
 
 TEXT_ENCODERS=(
-    # modern text encoders (qwen, etc) -> models/text_encoders
+    # qwen3vl 4b fp8 (~5.2GB) -> models/text_encoders
+    "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/text_encoders/qwen3vl_4b_fp8_scaled.safetensors|qwen3vl_4b_fp8_scaled.safetensors"
 )
 
 VAE_MODELS=(
-    # -> models/vae
+    # qwen image vae (~254MB) -> models/vae
+    "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/vae/qwen_image_vae.safetensors|qwen_image_vae.safetensors"
 )
 
 LORA_MODELS=(
-    # -> models/lora
+    # darkbrush style lora (~469MB) -> models/loras
+    "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/loras/krea2_darkbrush.safetensors|krea2_darkbrush.safetensors"
 )
 
 CONTROLNET_MODELS=(
