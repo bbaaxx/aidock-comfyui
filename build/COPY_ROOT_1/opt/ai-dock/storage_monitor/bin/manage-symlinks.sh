@@ -10,6 +10,11 @@ storage_dir="$1"
 stored_file="$2"
 event_type="$3"
 
+# Directories are skipped silently (their files get linked individually);
+# only warn on actual symlink-escape attempts.
+if [[ -d $stored_file ]]; then
+    exit 0
+fi
 if [[ -L $stored_file || ( -e $stored_file && ! -f $stored_file ) ]]; then
     printf "Refusing to link non-regular or symlinked storage file: %s\n" "$stored_file" >&2
     exit 0
