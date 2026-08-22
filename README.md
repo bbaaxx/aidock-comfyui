@@ -113,7 +113,11 @@ Reuses the pubkey-only SSH endpoint; adds no listening services and no third-par
 
 ```bash
 # one-shot (outputs, models)
-rsync -avz -e "ssh -i ~/.runpod/ssh/RunPod-Key-Go -p <pod_ssh_port>" \
+# NOTE --chmod: macOS files often carry owner-only perms (uid 501, mode 700);
+# rsync -a preserves them and the pod's non-root comfyui user then cannot
+# read the files (shows up as FileNotFoundError). Force readable perms:
+rsync -avz --chmod=Du+rwx,Dgo+rx,Fu+rw,Fgo+r \
+  -e "ssh -i ~/.runpod/ssh/RunPod-Key-Go -p <pod_ssh_port>" \
   root@<pod_ip>:/opt/ComfyUI/output/ ./outputs/
 
 # continuous two-way (https://mutagen.io)
