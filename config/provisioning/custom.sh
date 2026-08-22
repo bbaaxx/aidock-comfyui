@@ -106,10 +106,14 @@ function provisioning_get_pip_packages() {
 }
 
 # Clone custom nodes if missing (pinned "url@sha"); install requirements
-# on first provision only. Pre-existing dirs are left untouched: re-running
-# pip against volume content on every boot would let volume tampering
-# become boot-time code execution.
+# on first provision only.
+# NODES_PINNED=true (default): checkout the pinned @sha; existing dirs are
+#   left untouched (volume tamper must not become boot-time code exec).
+# NODES_PINNED=false: track latest default branch (clone HEAD; existing
+#   dirs get git pull + requirements reinstall). Mutable supply chain -
+#   use only when you actively want newest node code.
 function provisioning_get_nodes() {
+    pinned="${NODES_PINNED:-true}"
     for entry in "${NODES[@]}"; do
         [[ -z $entry ]] && continue
         repo="${entry%@*}"
@@ -119,12 +123,18 @@ function provisioning_get_nodes() {
         path="/opt/ComfyUI/custom_nodes/${dir}"
         requirements="${path}/requirements.txt"
         if [[ -d $path ]]; then
-            printf "Node already present: %s (skipping)\n" "${dir}"
+            if [[ ${pinned,,} == "false" ]]; then
+                printf "Updating node (NODES_PINNED=false): %s...\n" "${dir}"
+                ( cd "$path" && git pull )
+                [[ -e $requirements ]] && "$COMFYUI_VENV_PIP" install --no-cache-dir -r "${requirements}"
+            else
+                printf "Node already present: %s (skipping)\n" "${dir}"
+            fi
             continue
         fi
         printf "Cloning node: %s...\n" "${repo}"
         git clone "${repo}" "${path}" --recursive
-        if [[ -n $sha ]]; then
+        if [[ ${pinned,,} != "false" && -n $sha ]]; then
             ( cd "$path" && git checkout --detach "${sha}" && git submodule update --init --recursive )
         fi
         [[ -e $requirements ]] && "$COMFYUI_VENV_PIP" install --no-cache-dir -r "${requirements}"
