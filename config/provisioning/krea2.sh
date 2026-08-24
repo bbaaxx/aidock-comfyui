@@ -25,8 +25,8 @@ NODES=(
 )
 
 PIP_PACKAGES=(
-    # ReActor runtime deps (its install.py is never run by provisioning)
-    "insightface"
+    # ReActor runtime deps (its install.py is never run by provisioning).
+    # Current ReActor vendors its own face objects - insightface NOT needed.
     "onnxruntime-gpu"
 )
 
