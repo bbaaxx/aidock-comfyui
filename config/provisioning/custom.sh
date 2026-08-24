@@ -66,6 +66,10 @@ ESRGAN_MODELS=(
     # upscalers -> models/esrgan
 )
 
+INSIGHTFACE_MODELS=(
+    # insightface/inswapper etc -> models/insightface
+)
+
 EMBEDDINGS=(
     # textual inversion -> models/embeddings
 )
@@ -91,6 +95,7 @@ function provisioning_start() {
     provisioning_get_models "${STORAGE}/lora"       "${LORA_MODELS[@]}"
     provisioning_get_models "${STORAGE}/controlnet" "${CONTROLNET_MODELS[@]}"
     provisioning_get_models "${STORAGE}/esrgan"     "${ESRGAN_MODELS[@]}"
+    provisioning_get_models "${STORAGE}/insightface" "${INSIGHTFACE_MODELS[@]}"
     provisioning_get_models "${STORAGE}/embeddings" "${EMBEDDINGS[@]}"
     provisioning_link_storage
     provisioning_restart_services

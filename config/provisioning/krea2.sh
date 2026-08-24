@@ -21,10 +21,13 @@
 NODES=(
     # url@sha — pinned commits only (supply chain). To update: bump the SHA.
     "https://github.com/ltdrdata/ComfyUI-Manager@4f56cf3dfa7de5d8a8614dfe202ff8d613ba2244"
+    "https://github.com/Gourieff/ComfyUI-ReActor@6ad6b35a4df250d14cb2abf0808c9ffedf59f747"
 )
 
 PIP_PACKAGES=(
-    #"package-1"
+    # ReActor runtime deps (its install.py is never run by provisioning)
+    "insightface"
+    "onnxruntime-gpu"
 )
 
 APT_PACKAGES=(
@@ -73,6 +76,11 @@ ESRGAN_MODELS=(
     # upscalers -> models/esrgan
 )
 
+INSIGHTFACE_MODELS=(
+    # ReActor swapper -> models/insightface
+    "https://huggingface.co/datasets/Gourieff/ReActor/resolve/main/models/inswapper_128.onnx|inswapper_128.onnx"
+)
+
 EMBEDDINGS=(
     # textual inversion -> models/embeddings
 )
@@ -98,6 +106,7 @@ function provisioning_start() {
     provisioning_get_models "${STORAGE}/lora"       "${LORA_MODELS[@]}"
     provisioning_get_models "${STORAGE}/controlnet" "${CONTROLNET_MODELS[@]}"
     provisioning_get_models "${STORAGE}/esrgan"     "${ESRGAN_MODELS[@]}"
+    provisioning_get_models "${STORAGE}/insightface" "${INSIGHTFACE_MODELS[@]}"
     provisioning_get_models "${STORAGE}/embeddings" "${EMBEDDINGS[@]}"
     provisioning_link_storage
     provisioning_restart_services
