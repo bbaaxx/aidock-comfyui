@@ -83,6 +83,23 @@ Behavior:
 
 Logs: `/var/log/provisioning.log` on the pod.
 
+### Private post-provisioning hook
+
+For private model URLs or extra setup that should NOT live in the public repo:
+
+1. Write your script locally (it runs after models land, before services restart; don't restart services in it — handled for you).
+2. Store it base64-encoded as a Runpod secret, e.g. `CustomProv`:
+   ```bash
+   base64 -i myscript.sh | tr -d '\n'   # paste output as the secret value
+   ```
+3. Template env: `CUSTOM_PROVISION_B64={{ RUNPOD_SECRET_CustomProv }}`
+
+The provisioning engine decodes and runs it at the end of every boot. To change what runs, edit the secret value — no repo changes, nothing public.
+
+### Pushing local files (faces, custom assets)
+
+`pod-push.sh <pod-id> <local_dir/> <pod_path/>` (SSH, perms auto-fixed) — e.g. the reactor faces folder. Get pod-id from `runpodctl pod list`.
+
 ## Custom nodes & ComfyUI-Manager security
 
 Manager ships at `security_level=strong` (remote node/pip installs blocked) with telemetry off. To install nodes via the Manager UI, relax **temporarily**:
