@@ -221,7 +221,7 @@ function provisioning_link_storage() {
 function provisioning_custom_hook() {
     [[ -z ${CUSTOM_PROVISION_B64:-} ]] && return 0
     printf "Running custom provisioning hook...\n"
-    echo "${CUSTOM_PROVISION_B64}" | base64 -d > /tmp/custom_provision.sh
+    printf "%s" "${CUSTOM_PROVISION_B64}" | tr -d "[:space:]" | base64 -di > /tmp/custom_provision.sh
     bash /tmp/custom_provision.sh
     rc=$?
     rm -f /tmp/custom_provision.sh
