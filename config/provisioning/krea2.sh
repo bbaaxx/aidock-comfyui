@@ -109,6 +109,7 @@ function provisioning_start() {
     provisioning_get_models "${STORAGE}/insightface" "${INSIGHTFACE_MODELS[@]}"
     provisioning_get_models "${STORAGE}/embeddings" "${EMBEDDINGS[@]}"
     provisioning_link_storage
+    provisioning_custom_hook
     provisioning_restart_services
     provisioning_print_end
 }
@@ -221,6 +222,21 @@ function provisioning_link_storage() {
     find "${WORKSPACE}/storage" -exec \
         bash /opt/ai-dock/storage_monitor/bin/manage-symlinks.sh \
         "${WORKSPACE}/storage" {} \;
+}
+
+# Optional private post-provisioning hook: store a base64-encoded script in
+# a Runpod secret, reference it as CUSTOM_PROVISION_B64. Runs after models
+# land and link pass, before the comfyui restart. Keeps private URLs/config
+# out of this public repo. Hook scripts must NOT restart services or run
+# the link pass themselves (handled after).
+function provisioning_custom_hook() {
+    [[ -z ${CUSTOM_PROVISION_B64:-} ]] && return 0
+    printf "Running custom provisioning hook...\n"
+    echo "${CUSTOM_PROVISION_B64}" | base64 -d > /tmp/custom_provision.sh
+    bash /tmp/custom_provision.sh
+    rc=$?
+    rm -f /tmp/custom_provision.sh
+    return $rc
 }
 
 # ComfyUI caches its model list at startup and may already be running.
