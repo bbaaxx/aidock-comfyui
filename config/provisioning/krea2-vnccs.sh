@@ -162,6 +162,10 @@ VNCCS_DIRECT=(
     "https://huggingface.co/MIUProject/VNCCS_v3.0/resolve/main/models/checkpoints/Illustrious/ILFlatMix.safetensors|checkpoints/Illustrious/ILFlatMix.safetensors"
     "https://huggingface.co/MIUProject/VNCCS_v3.0/resolve/main/models/loras/DMD2/dmd2_sdxl_4step_lora_fp16.safetensors|loras/DMD2/dmd2_sdxl_4step_lora_fp16.safetensors"
     "https://huggingface.co/MIUProject/VNCCS_v3.0/resolve/main/models/loras/IL/mimimeter.safetensors|loras/IL/mimimeter.safetensors"
+    # SeedVR2 upscaler (VNCCS character_generator), pinned repo revision
+    # (matches SEEDVR_HF_REVISION in ComfyUI_VNCCS @2206d174)
+    "https://huggingface.co/Comfy-Org/SeedVR2/resolve/a457bf495efbd40ea92f699f7d2b5d2febeca176/diffusion_models/seedvr2_7b_sharp_fp16.safetensors|diffusion_models/seedvr2_7b_sharp_fp16.safetensors"
+    "https://huggingface.co/Comfy-Org/SeedVR2/resolve/a457bf495efbd40ea92f699f7d2b5d2febeca176/vae/ema_vae_fp16.safetensors|vae/ema_vae_fp16.safetensors"
 )
 
 ### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
