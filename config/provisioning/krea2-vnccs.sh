@@ -328,14 +328,31 @@ for it in items:
         url="$entry"
         if [[ $url =~ ^[0-9]+$ ]]; then
             url="https://civitai.com/api/download/models/${url}"
-        elif [[ $url =~ ^https?://(www\.)?civitai\.com/models/([0-9]+) ]]; then
-            url="https://civitai.com/api/download/models/${BASH_REMATCH[2]}"
+        elif [[ $url =~ ^https?://(www\.)?civitai\.(com|red)/models/([0-9]+) ]]; then
+            url="https://civitai.com/api/download/models/${BASH_REMATCH[3]}"
         fi
-        if [[ $url =~ civitai\.com ]]; then
-            auth=""
-            [[ -n $CIVITAI_TOKEN ]] && auth="?token=${CIVITAI_TOKEN}"
-            file=$(curl -sIL "${url}${auth}" | grep -i 'content-disposition' | tail -1 \
-                | sed -n 's/.*filename="\?\([^";]*\)"\?.*/\1/p' | tr -d '\r')
+        if [[ $url =~ civitai\.(com|red) ]]; then
+            # token as query param (both civitai hosts); append with & if the
+            # URL already has a query string
+            if [[ -n $CIVITAI_TOKEN && $url != *token=* ]]; then
+                sep="?"; [[ $url == *\?* ]] && sep="&"
+                url="${url}${sep}token=${CIVITAI_TOKEN}"
+            fi
+            # Filename: civitai 307-redirects to R2 with the real name in the
+            # response-content-disposition query param. Do NOT follow the
+            # redirect (-L): the R2 presigned URL 403s on HEAD.
+            loc=$(curl -sI "$url" | tr -d '\r' | sed -n 's/^[Ll]ocation: //p' | tail -1)
+            file=$(python3 -c '
+import sys, urllib.parse as up, re
+loc = sys.argv[1] if len(sys.argv) > 1 else ""
+m = re.search(r"filename%3D%22([^%\"]+)%22", loc) or re.search(r"filename=\\\"?([^&\";]+)", loc)
+print(up.unquote(m.group(1)) if m else "")
+' "$loc")
+            if [[ -z $file ]]; then
+                # fallback: content-disposition header (non-redirect case)
+                file=$(curl -sIL "$url" | grep -i 'content-disposition' | tail -1 \
+                    | sed -n 's/.*filename="\?\([^";]*\)"\?.*/\1/p' | tr -d '\r')
+            fi
             [[ -z $file ]] && { printf "ERROR: no filename for %s (gated? token?)\n" "$url" >&2; continue; }
             target="${dir}/${file}"
         else
@@ -408,7 +425,7 @@ function provisioning_download() {
     auth_header=""
     if [[ -n $HF_TOKEN && $url =~ ^https://([a-zA-Z0-9_-]+\.)?huggingface\.co(/|$|\?) ]]; then
         auth_header="Authorization: Bearer ${HF_TOKEN}"
-    elif [[ -n $CIVITAI_TOKEN && $url =~ ^https://([a-zA-Z0-9_-]+\.)?civitai\.com(/|$|\?) ]]; then
+    elif [[ -n $CIVITAI_TOKEN && $url =~ ^https://([a-zA-Z0-9_-]+\.)?civitai\.(com|red)(/|$|\?) ]]; then
         auth_header="Authorization: Bearer ${CIVITAI_TOKEN}"
     fi
     dir="$(dirname "${target}")"; file="$(basename "${target}")"
