@@ -168,6 +168,10 @@ VNCCS_DIRECT=(
     # (matches SEEDVR_HF_REVISION in ComfyUI_VNCCS @2206d174)
     "https://huggingface.co/Comfy-Org/SeedVR2/resolve/a457bf495efbd40ea92f699f7d2b5d2febeca176/diffusion_models/seedvr2_7b_sharp_fp16.safetensors|diffusion_models/seedvr2_7b_sharp_fp16.safetensors"
     "https://huggingface.co/Comfy-Org/SeedVR2/resolve/a457bf495efbd40ea92f699f7d2b5d2febeca176/vae/ema_vae_fp16.safetensors|vae/ema_vae_fp16.safetensors"
+    # Character Wizard LLM (llama.cpp), pinned to QWEN_VL_MODEL_REVISION in
+    # ComfyUI_VNCCS @2206d174
+    "https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF/resolve/68bb8bc4b7df5289c143aaec0ab477a7d4051aab/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf|LLM/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf"
+    "https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF/resolve/68bb8bc4b7df5289c143aaec0ab477a7d4051aab/mmproj-F16.gguf|LLM/mmproj-F16.gguf"
 )
 
 ### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
@@ -180,9 +184,13 @@ function provisioning_start() {
 
     provisioning_print_header
     provisioning_get_apt_packages
+    # extra-index wheels BEFORE nodes: ComfyUI_VNCCS/requirements.txt pulls
+    # llama-cpp-python from PyPI (source-only there -> CPU-only build ->
+    # 7B LLM on 37 vCPUs hangs the box). Preinstalling the cu124 wheel
+    # makes requirements.txt see it satisfied.
+    provisioning_get_pip_packages_extra_index
     provisioning_get_nodes
     provisioning_get_pip_packages
-    provisioning_get_pip_packages_extra_index
     provisioning_get_models "${STORAGE}/ckpt"             "${CHECKPOINT_MODELS[@]}"
     provisioning_get_models "${STORAGE}/unet"             "${UNET_MODELS[@]}"
     provisioning_get_models "${STORAGE}/diffusion_models" "${DIFFUSION_MODELS[@]}"
