@@ -204,6 +204,7 @@ function provisioning_start() {
     provisioning_get_models "${STORAGE}/embeddings" "${EMBEDDINGS[@]}"
     provisioning_get_vnccs_direct
     provisioning_get_extra_checkpoints
+    provisioning_ld_library_path
     provisioning_patch_vnccs_proxy
     provisioning_link_storage
     provisioning_custom_hook
@@ -376,6 +377,21 @@ print(up.unquote(m.group(1)) if m else "")
         printf "Downloading (extra): %s -> %s\n" "${url}" "${target}"
         provisioning_download "${url}" "${target}"
     done
+}
+
+# The abetlen cu124 llama-cpp wheel dynamically loads libcublas.so.12 etc.
+# Those live in the venv's nvidia-* pip packages, not on the default loader
+# path -> llama_cpp import dies with "libcublas.so.12: cannot open shared
+# object file". supervisor-comfyui.sh sources environment.sh, so exporting
+# there covers comfyui (and jupyter etc.). Idempotent.
+function provisioning_ld_library_path() {
+    envfile=/opt/ai-dock/etc/environment.sh
+    marker="# krea2-vnccs: nvidia venv libs for llama-cpp cu124 wheel"
+    grep -qF "$marker" "$envfile" && { printf "LD_LIBRARY_PATH already set (skipping)\n"; return 0; }
+    libdirs=$(ls -d /opt/environments/python/comfyui/lib/python3.10/site-packages/nvidia/*/lib 2>/dev/null | tr '\n' ':')
+    [[ -z $libdirs ]] && { printf "WARN: no nvidia lib dirs found\n"; return 0; }
+    printf '\n%s\nexport LD_LIBRARY_PATH="%s${LD_LIBRARY_PATH:-}"\n' "$marker" "$libdirs" >> "$envfile"
+    printf "LD_LIBRARY_PATH exported via environment.sh\n"
 }
 
 # Runpod's edge proxy rewrites Host to an internal CGNAT ip:port, so
