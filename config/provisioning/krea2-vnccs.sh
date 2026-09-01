@@ -293,9 +293,11 @@ function provisioning_get_vnccs_direct() {
 # Sec-Fetch-Site cross-site check still guards real cross-origin abuse.
 # Idempotent; same logic as vnccs-proxy-fix.sh. Refuses loudly if VNCCS
 # upstream changed the target block (re-derive patch, see wiki).
+# NOTE: clone dir follows the repo name (ComfyUI_VNCCS), not the
+# registry id (vnccs) — patch path must match.
 function provisioning_patch_vnccs_proxy() {
-    target="/opt/ComfyUI/custom_nodes/vnccs/utils.py"
-    [[ -f $target ]] || { printf "vnccs utils.py not found - skipping proxy patch\n"; return 0; }
+    target="/opt/ComfyUI/custom_nodes/ComfyUI_VNCCS/utils.py"
+    [[ -f $target ]] || { printf "vnccs utils.py not found at %s - patch NOT applied, downloads via UI will 403\n" "$target"; return 0; }
     if grep -q '100.64.0.0/10' "$target"; then
         printf "vnccs proxy patch already present (skipping)\n"
         return 0
