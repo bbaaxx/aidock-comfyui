@@ -72,7 +72,19 @@ PIP_PACKAGES_EXTRA_INDEX=(
 
 CHECKPOINT_MODELS=(
     # Krea 2 is not a checkpoint - see DIFFUSION_MODELS below
+    # VNCCS Illustrious checkpoint goes via VNCCS_DIRECT (nested subdir).
 )
+
+# Optional extra checkpoints at deploy time. Env EXTRA_CHECKPOINTS: JSON
+# array of strings, each one of:
+#   "https://huggingface.co/<repo>/resolve/main/<file>"   (direct)
+#   "https://civitai.com/models/<id>"  or bare "<id>"     (civitai, needs
+#                                                          CIVITAI_TOKEN for
+#                                                          gated models)
+#   "https://civitai.com/api/download/models/<id>"
+# Filenames: HF from URL path; civitai from content-disposition.
+# Lands in storage ckpt dir -> symlinked into models/checkpoints.
+# Example: EXTRA_CHECKPOINTS='["https://huggingface.co/stabilityai/sdxl...","133005"]'
 
 UNET_MODELS=(
     # legacy unet dir -> models/unet. NOTE: the VNCCS Q8 GGUF goes to
@@ -145,6 +157,11 @@ VNCCS_DIRECT=(
     "https://github.com/TencentARC/GFPGAN/releases/download/v1.3.4/GFPGANv1.4.pth|facerestore_models/GFPGANv1.4.pth"
     "https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/codeformer.pth|facerestore_models/codeformer-v0.1.0.pth"
     "https://huggingface.co/datasets/Gourieff/ReActor/resolve/main/models/facerestore_models/GPEN-BFR-512.onnx|facerestore_models/GPEN-BFR-512.onnx"
+    # Illustrious pipeline (VNCCS character steps 1-3): suggested ckpt +
+    # turbo (DMD2) + age helper (Mimimeter) LoRAs
+    "https://huggingface.co/MIUProject/VNCCS_v3.0/resolve/main/models/checkpoints/Illustrious/ILFlatMix.safetensors|checkpoints/Illustrious/ILFlatMix.safetensors"
+    "https://huggingface.co/MIUProject/VNCCS_v3.0/resolve/main/models/loras/DMD2/dmd2_sdxl_4step_lora_fp16.safetensors|loras/DMD2/dmd2_sdxl_4step_lora_fp16.safetensors"
+    "https://huggingface.co/MIUProject/VNCCS_v3.0/resolve/main/models/loras/IL/mimimeter.safetensors|loras/IL/mimimeter.safetensors"
 )
 
 ### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
@@ -172,6 +189,7 @@ function provisioning_start() {
     provisioning_get_models "${STORAGE}/insightface" "${INSIGHTFACE_MODELS[@]}"
     provisioning_get_models "${STORAGE}/embeddings" "${EMBEDDINGS[@]}"
     provisioning_get_vnccs_direct
+    provisioning_get_extra_checkpoints
     provisioning_patch_vnccs_proxy
     provisioning_link_storage
     provisioning_custom_hook
@@ -282,6 +300,49 @@ function provisioning_get_vnccs_direct() {
         fi
         mkdir -p "$(dirname "${target}")"
         printf "Downloading: %s -> %s\n" "${url}" "${target}"
+        provisioning_download "${url}" "${target}"
+    done
+}
+
+# EXTRA_CHECKPOINTS: JSON array of URLs / civitai model ids (see CONFIG).
+# Civitai entries resolve their filename from content-disposition; the
+# civitai-fetch.sh pattern (skip when already present).
+function provisioning_get_extra_checkpoints() {
+    [[ -z ${EXTRA_CHECKPOINTS:-} ]] && return 0
+    dir="${STORAGE}/ckpt"
+    mkdir -p "$dir"
+    printf "%s" "${EXTRA_CHECKPOINTS}" | python3 -c '
+import json, sys
+try:
+    items = json.load(sys.stdin)
+    assert isinstance(items, list)
+except Exception:
+    sys.exit("ERROR: EXTRA_CHECKPOINTS must be a JSON array of strings")
+for it in items:
+    print(it)
+' | while read -r entry; do
+        url="$entry"
+        if [[ $url =~ ^[0-9]+$ ]]; then
+            url="https://civitai.com/api/download/models/${url}"
+        elif [[ $url =~ ^https?://(www\.)?civitai\.com/models/([0-9]+) ]]; then
+            url="https://civitai.com/api/download/models/${BASH_REMATCH[2]}"
+        fi
+        if [[ $url =~ civitai\.com ]]; then
+            auth=""
+            [[ -n $CIVITAI_TOKEN ]] && auth="?token=${CIVITAI_TOKEN}"
+            file=$(curl -sIL "${url}${auth}" | grep -i 'content-disposition' | tail -1 \
+                | sed -n 's/.*filename="\?\([^";]*\)"\?.*/\1/p' | tr -d '\r')
+            [[ -z $file ]] && { printf "ERROR: no filename for %s (gated? token?)\n" "$url" >&2; continue; }
+            target="${dir}/${file}"
+        else
+            file="${url%%\?*}"; file="${file##*/}"
+            target="${dir}/${file}"
+        fi
+        if [[ -s $target ]]; then
+            printf "Skipping (exists): %s\n" "${file}"
+            continue
+        fi
+        printf "Downloading (extra): %s -> %s\n" "${url}" "${target}"
         provisioning_download "${url}" "${target}"
     done
 }
