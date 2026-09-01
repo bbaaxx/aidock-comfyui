@@ -92,8 +92,10 @@ UNET_MODELS=(
 )
 
 DIFFUSION_MODELS=(
-    # krea2 turbo fp8 (~13.1GB) -> models/diffusion_models
-    "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_fp8_scaled.safetensors|krea2_turbo_fp8_scaled.safetensors"
+    # krea2 turbo fp8 NOT provisioned here: the krea2 checkpoint in use is
+    # darkBeast KREA2 FP8 (civitai 3078453), delivered by the template's
+    # CUSTOM_PROVISION_B64 hook. Saves 13GB. Re-add if you want stock krea2:
+    #"https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_fp8_scaled.safetensors|krea2_turbo_fp8_scaled.safetensors"
 )
 
 CLIP_MODELS=(
