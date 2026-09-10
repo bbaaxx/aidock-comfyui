@@ -96,6 +96,8 @@ Same image, different `PROVISIONING_SCRIPT` — create a template per workload:
 
 Qwen-Edit ships workflow [`config/workflows/qwen-image-edit-2511.json`](config/workflows/qwen-image-edit-2511.json) — import it in ComfyUI; inputs: image, prompt, Fast Mode toggle (4-step Lightning LoRA), model/LoRA picks. The fp8 unet is the default; a bf16 line is commented in the script.
 
+**Qwen-Edit host sizing:** ComfyUI stages the unet (~20GB) + text encoder (~8GB) in *system* RAM before VRAM. On 41GB-RAM community hosts that is ~78% RAM at idle — single prompts fine, stress queues lock up. For heavy queueing pick hosts with **≥64GB system RAM** (console host details show RAM); 32GB VRAM is enough either way (dynamic loading).
+
 ### Private post-provisioning hook
 
 For private model URLs or extra setup that should NOT live in the public repo:
