@@ -83,6 +83,19 @@ Behavior:
 
 Logs: `/var/log/provisioning.log` on the pod.
 
+### Template variants (prebuilt model sets)
+
+Same image, different `PROVISIONING_SCRIPT` — create a template per workload:
+
+| Template | Provisioning script | Models | Volume |
+| --- | --- | --- | --- |
+| `aidock-comfyui-revived` | [`custom.sh`](config/provisioning/custom.sh) | none (edit CONFIG) | 50GB |
+| `aidock-comfyui-krea2` | [`krea2.sh`](config/provisioning/krea2.sh) | Krea 2 turbo fp8 + qwen3vl (~20GB) | 80GB |
+| `aidock-comfyui-krea2-vnccs` | [`krea2-vnccs.sh`](config/provisioning/krea2-vnccs.sh) | Krea 2 + VNCCS stack (~52GB) | 150-200GB |
+| `aidock-comfyui-qwen-edit` | [`qwen-edit.sh`](config/provisioning/qwen-edit.sh) | Qwen-Image-Edit 2511 fp8 + Lightning LoRA (~31GB) | 80GB |
+
+Qwen-Edit ships workflow [`config/workflows/qwen-image-edit-2511.json`](config/workflows/qwen-image-edit-2511.json) — import it in ComfyUI; inputs: image, prompt, Fast Mode toggle (4-step Lightning LoRA), model/LoRA picks. The fp8 unet is the default; a bf16 line is commented in the script.
+
 ### Private post-provisioning hook
 
 For private model URLs or extra setup that should NOT live in the public repo:

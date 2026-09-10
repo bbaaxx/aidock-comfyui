@@ -1,0 +1,252 @@
+#!/bin/bash
+
+# Qwen-Image-Edit 2511 provisioning for bbaaxx/aidock-comfyui.
+# Model set per the "Image Edit (Qwen-Image 2511)" workflow
+# (config/workflows/qwen-image-edit-2511.json; all URLs public).
+# Sourced by /opt/ai-dock/bin/init.sh during container init.
+#
+# NOTE: needs a recent ComfyUI (Qwen-Image-Edit 2511 nodes incl.
+# TextEncodeQwenImageEditPlus) - use the cu128/cu130 images (v0.33.1),
+# NOT legacy cu121/v0.26.2. Needs ~31GB of model space on the workspace
+# volume (fp8mixed unet variant; bf16 would be ~40GB).
+#
+# https://raw.githubusercontent.com/bbaaxx/aidock-comfyui/main/config/provisioning/qwen-edit.sh
+
+# ============================================================
+# CONFIG - edit this section only.
+# Model entry format: "url|filename" or "url|filename|sha256"
+# (filename/sha256 optional; sha256 verified when given).
+# Files that already exist are skipped, so re-provisioning with a
+# persistent disk is cheap.
+# ============================================================
+
+NODES=(
+    # url@sha — pinned commits only (supply chain). To update: bump the SHA.
+    # Workflow itself is all comfy-core nodes; Manager for convenience only.
+    "https://github.com/ltdrdata/ComfyUI-Manager@4f56cf3dfa7de5d8a8614dfe202ff8d613ba2244"
+)
+
+PIP_PACKAGES=(
+    # none - all workflow nodes are comfy-core
+)
+
+APT_PACKAGES=(
+    # multi-connection downloader: HF/CDN per-connection throttling makes
+    # single-stream wget crawl (~2MB/s vs ~300MB/s with aria2 -x16)
+    "aria2"
+)
+
+CHECKPOINT_MODELS=(
+    # Qwen-Image-Edit is not a checkpoint - see DIFFUSION_MODELS below
+)
+
+UNET_MODELS=(
+    # FLUX unets / legacy unet dir -> models/unet
+)
+
+DIFFUSION_MODELS=(
+    # qwen image edit 2511 fp8mixed (~20.5GB) -> models/diffusion_models
+    # bf16 alternative (~40GB):
+    #"https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2511_bf16.safetensors|qwen_image_edit_2511_bf16.safetensors"
+    "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2511_fp8mixed.safetensors|qwen_image_edit_2511_fp8mixed.safetensors"
+)
+
+CLIP_MODELS=(
+    # legacy clip dir -> models/clip
+)
+
+TEXT_ENCODERS=(
+    # qwen2.5-vl 7b fp8 (~9.4GB) -> models/text_encoders
+    "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors|qwen_2.5_vl_7b_fp8_scaled.safetensors"
+)
+
+VAE_MODELS=(
+    # qwen image vae (~254MB) -> models/vae
+    "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors|qwen_image_vae.safetensors"
+)
+
+LORA_MODELS=(
+    # 4-step Lightning LoRA (~850MB, optional speed-up; workflow has a
+    # "Fast Mode" boolean toggle - disable it there if you drop this)
+    "https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning/resolve/main/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors|Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors"
+)
+
+CONTROLNET_MODELS=(
+    # -> models/controlnet
+)
+
+ESRGAN_MODELS=(
+    # upscalers -> models/esrgan
+)
+
+EMBEDDINGS=(
+    # textual inversion -> models/embeddings
+)
+
+### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
+
+STORAGE="${WORKSPACE}/storage/stable_diffusion/models"
+
+function provisioning_start() {
+    source /opt/ai-dock/etc/environment.sh
+    source /opt/ai-dock/bin/venv-set.sh comfyui
+
+    provisioning_print_header
+    provisioning_get_apt_packages
+    provisioning_get_nodes
+    provisioning_get_pip_packages
+    provisioning_get_models "${STORAGE}/ckpt"             "${CHECKPOINT_MODELS[@]}"
+    provisioning_get_models "${STORAGE}/unet"             "${UNET_MODELS[@]}"
+    provisioning_get_models "${STORAGE}/diffusion_models" "${DIFFUSION_MODELS[@]}"
+    provisioning_get_models "${STORAGE}/clip"             "${CLIP_MODELS[@]}"
+    provisioning_get_models "${STORAGE}/text_encoders"    "${TEXT_ENCODERS[@]}"
+    provisioning_get_models "${STORAGE}/vae"        "${VAE_MODELS[@]}"
+    provisioning_get_models "${STORAGE}/lora"       "${LORA_MODELS[@]}"
+    provisioning_get_models "${STORAGE}/controlnet" "${CONTROLNET_MODELS[@]}"
+    provisioning_get_models "${STORAGE}/esrgan"     "${ESRGAN_MODELS[@]}"
+    provisioning_get_models "${STORAGE}/embeddings" "${EMBEDDINGS[@]}"
+    provisioning_link_storage
+    provisioning_custom_hook
+    provisioning_restart_services
+    provisioning_print_end
+}
+
+function provisioning_get_apt_packages() {
+    [[ -n $APT_PACKAGES ]] && sudo $APT_INSTALL ${APT_PACKAGES[@]}
+}
+
+function provisioning_get_pip_packages() {
+    [[ -n $PIP_PACKAGES ]] && "$COMFYUI_VENV_PIP" install --no-cache-dir ${PIP_PACKAGES[@]}
+}
+
+# Clone custom nodes if missing (pinned "url@sha"); install requirements
+# on first provision only.
+# NODES_PINNED=true (default): checkout the pinned @sha; existing dirs are
+#   left untouched (volume tamper must not become boot-time code exec).
+# NODES_PINNED=false: track latest default branch (clone HEAD; existing
+#   dirs get git pull + requirements reinstall). Mutable supply chain -
+#   use only when you actively want newest node code.
+function provisioning_get_nodes() {
+    pinned="${NODES_PINNED:-true}"
+    for entry in "${NODES[@]}"; do
+        [[ -z $entry ]] && continue
+        repo="${entry%@*}"
+        sha=""
+        [[ $entry == *"@"* ]] && sha="${entry##*@}"
+        dir="${repo##*/}"
+        path="/opt/ComfyUI/custom_nodes/${dir}"
+        requirements="${path}/requirements.txt"
+        if [[ -d $path ]]; then
+            if [[ ${pinned,,} == "false" ]]; then
+                printf "Updating node (NODES_PINNED=false): %s...\n" "${dir}"
+                ( cd "$path" && git pull )
+                [[ -e $requirements ]] && "$COMFYUI_VENV_PIP" install --no-cache-dir -r "${requirements}"
+            else
+                printf "Node already present: %s (skipping)\n" "${dir}"
+            fi
+            continue
+        fi
+        printf "Cloning node: %s...\n" "${repo}"
+        git clone "${repo}" "${path}" --recursive
+        if [[ ${pinned,,} != "false" && -n $sha ]]; then
+            ( cd "$path" && git checkout --detach "${sha}" && git submodule update --init --recursive )
+        fi
+        [[ -e $requirements ]] && "$COMFYUI_VENV_PIP" install --no-cache-dir -r "${requirements}"
+    done
+}
+
+# $1 target dir, remaining args: "url|filename" or "url|filename|sha256"
+# entries. Skips any file that already exists and is non-empty; when a
+# sha256 is given it is verified after download (and for skipped files).
+function provisioning_get_models() {
+    dir="$1"
+    shift
+    entries=("$@")
+    [[ -z ${entries[0]} ]] && return 0
+    mkdir -p "$dir"
+    for entry in "${entries[@]}"; do
+        [[ -z $entry ]] && continue
+        IFS='|' read -r url file sha256 <<< "${entry}"
+        if [[ -z $file ]]; then
+            file="${url%%\?*}"; file="${file##*/}"
+        fi
+        target="${dir}/${file}"
+        if [[ -s $target ]]; then
+            printf "Skipping (exists): %s\n" "${file}"
+        else
+            printf "Downloading: %s -> %s\n" "${url}" "${target}"
+            provisioning_download "${url}" "${target}"
+        fi
+        if [[ -n $sha256 ]]; then
+            if [[ $(sha256sum "${target}" | cut -d' ' -f1) != "${sha256}" ]]; then
+                printf "ERROR: sha256 mismatch for %s - refusing to keep file\n" "${file}" >&2
+                rm -f "${target}"
+                return 1
+            fi
+            printf "sha256 OK: %s\n" "${file}"
+        fi
+    done
+}
+
+# Auth header for known gated hosts; aria2 (multi-connection) preferred,
+# wget fallback. Downloads to explicit target path, resumable.
+function provisioning_download() {
+    url="$1"; target="$2"
+    auth_header=""
+    if [[ -n $HF_TOKEN && $url =~ ^https://([a-zA-Z0-9_-]+\.)?huggingface\.co(/|$|\?) ]]; then
+        auth_header="Authorization: Bearer ${HF_TOKEN}"
+    elif [[ -n $CIVITAI_TOKEN && $url =~ ^https://([a-zA-Z0-9_-]+\.)?civitai\.com(/|$|\?) ]]; then
+        auth_header="Authorization: Bearer ${CIVITAI_TOKEN}"
+    fi
+    dir="$(dirname "${target}")"; file="$(basename "${target}")"
+    if command -v aria2c >/dev/null 2>&1; then
+        aria2_args=(-c -x16 -s16 -q --file-allocation=none --summary-interval=30
+                    -d "${dir}" -o "${file}")
+        [[ -n $auth_header ]] && aria2_args+=(--header="${auth_header}")
+        aria2c "${aria2_args[@]}" "${url}"
+    else
+        if [[ -n $auth_header ]]; then
+            wget --header="${auth_header}" -q --show-progress -e dotbytes=4M -c -O "${target}" "${url}"
+        else
+            wget -q --show-progress -e dotbytes=4M -c -O "${target}" "${url}"
+        fi
+    fi
+}
+
+# storage-monitor's inotify watches may not be established when downloads
+# land; create the storage -> /opt/ComfyUI/models symlinks explicitly.
+function provisioning_link_storage() {
+    find "${WORKSPACE}/storage" -exec \
+        bash /opt/ai-dock/storage_monitor/bin/manage-symlinks.sh \
+        "${WORKSPACE}/storage" {} \;
+}
+
+# Optional private post-provisioning hook: store a base64-encoded script in
+# a Runpod secret, reference it as CUSTOM_PROVISION_B64. Runs after models
+# land and link pass, before the comfyui restart. Keeps private URLs/config
+# out of this public repo. Hook scripts must NOT restart services or run
+# the link pass themselves (handled after).
+function provisioning_custom_hook() {
+    [[ -z ${CUSTOM_PROVISION_B64:-} ]] && return 0
+    printf "Running custom provisioning hook...\n"
+    printf "%s" "${CUSTOM_PROVISION_B64}" | tr -d "[:space:]" | base64 -di > /tmp/custom_provision.sh
+    bash /tmp/custom_provision.sh
+    rc=$?
+    rm -f /tmp/custom_provision.sh
+    return $rc
+}
+
+# ComfyUI caches its model list at startup and may already be running.
+function provisioning_restart_services() {
+    supervisorctl restart comfyui comfyui_api_wrapper || true
+}
+
+function provisioning_print_header() {
+    printf "\n##############################################\n#          Provisioning container            #\n#         This will take some time           #\n##############################################\n\n"
+}
+
+function provisioning_print_end() {
+    printf "\nProvisioning complete: Web UI will start now\n\n"
+}
+
+provisioning_start
