@@ -96,7 +96,7 @@ Same image, different `PROVISIONING_SCRIPT` — create a template per workload:
 
 Qwen-Edit ships workflow [`config/workflows/qwen-image-edit-2511.json`](config/workflows/qwen-image-edit-2511.json) — import it in ComfyUI; inputs: image, prompt, Fast Mode toggle (4-step Lightning LoRA), model/LoRA picks. The fp8 unet is the default; a bf16 line is commented in the script.
 
-**Qwen-Edit host sizing:** ComfyUI stages the unet (~20GB) + text encoder (~8GB) in *system* RAM before VRAM. On 41GB-RAM community hosts that is ~78% RAM at idle — single prompts fine, stress queues lock up. For heavy queueing pick hosts with **≥64GB system RAM** (console host details show RAM); 32GB VRAM is enough either way (dynamic loading).
+**Qwen-Edit host sizing:** default pick is a community **RTX 4090 ($0.34/hr)** — measured at parity with an RTX 5090 on the Lightning 4-step path (~7s/prompt both; DynamicVRAM + async offload covers the 24GB VRAM). ComfyUI stages the unet (~20GB) + text encoder (~8GB) in *system* RAM before VRAM: 62GB-RAM hosts ran it comfortably, 41GB hosts hit ~78% RAM at idle and can lock up under stress queues. If the host selector offers it, prefer ≥60GB RAM; avoid <48GB for anything beyond single prompts.
 
 ### Private post-provisioning hook
 
